@@ -184,6 +184,7 @@ class ImportTool(object):
         
         for line in child.stdout:
             log.write(line)
+            log.flush()
             
             if line.startswith('[INFO] Processing '):
                 parts = line.split(' ')
@@ -284,7 +285,19 @@ def loadNecessaryPlugins():
     importIntoTmpRepo(path)
     
     import shutil
-    shutil.rmtree(os.path.join(templateRepo, 'org', 'eclipse'))
+    
+    eclipseDir = os.path.join(templateRepo, 'org', 'eclipse')
+    
+    # Save one JAR which the Maven Eclipse Plugin needs
+    backupDir = os.path.join(templateRepo, '..', 'backup', 'resources')
+    if not os.path.exists(backupDir):
+        shutil.copytree(os.path.join(eclipseDir, 'core', 'resources'), backupDir)
+    
+    # Delete everything
+    shutil.rmtree(eclipseDir)
+    
+    # Restore what we saved above
+    shutil.copytree(backupDir, os.path.join(eclipseDir, 'core', 'resources'))
     
     print('OK')
 
