@@ -13,8 +13,6 @@ import filecmp
 
 VERSION = '0.1 (17.03.2011)'
 
-helpOptions = frozenset(('--help', '-h', '-help', '-?', 'help'))
-
 def merge(source, target):
     names = os.listdir(source)
     
@@ -41,6 +39,8 @@ def merge(source, target):
                 pass
             else:
                 os.link(srcPath, targetPath)
+
+helpOptions = frozenset(('--help', '-h', '-help', '-?', 'help'))
 
 def main(name, argv):
     print('%s %s' % (name, VERSION))
