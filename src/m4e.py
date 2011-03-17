@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
 Utility to unpack archives downloaded from eclipse.org
 and import the plug-ins into a Maven 2 repository.
@@ -9,6 +10,7 @@ Created on Mar 17, 2011
 
 import sys
 import os.path
+import shutil
 
 workDir = os.path.abspath('../tmp')
 
@@ -238,7 +240,6 @@ class ImportTool(object):
         
     def clean(self):
         '''Make sure we don't have any leftovers from previous attempts.'''
-        import shutil
         if os.path.exists(self.tmpHome):
             shutil.rmtree(self.tmpHome)
         
@@ -266,6 +267,7 @@ class ImportTool(object):
 def importIntoTmpRepo(path):
     tool = ImportTool(path)
     tool.run()
+    return tool
 
 primingArchive=os.path.join(workDir,'..','data','priming.tar.gz')
 templateRepo=os.path.join(workDir,'priming_home','m2repo')
@@ -284,8 +286,6 @@ def loadNecessaryPlugins():
     path = unpackArchive(archive)
     importIntoTmpRepo(path)
     
-    import shutil
-    
     eclipseDir = os.path.join(templateRepo, 'org', 'eclipse')
     
     # Save one JAR which the Maven Eclipse Plugin needs
@@ -301,6 +301,49 @@ def loadNecessaryPlugins():
     
     print('OK')
 
+def deleteCommonFiles(folder, mask):
+    #print 'deleteCommonFiles',folder,mask
+    names = os.listdir(folder)
+    names.sort()
+    
+    toDelete = set(os.listdir(mask))
+    
+    isEmpty = True
+    
+    for name in names:
+        if not name in toDelete:
+            isEmpty = False
+            continue
+        
+        path = os.path.join(folder, name)
+        #print 'Common',path
+        if os.path.isdir(path):
+            empty = deleteCommonFiles(path, os.path.join(mask, name))
+            
+            if empty:
+                #print 'Deleting empty dir',path
+                os.rmdir(path)
+            else:
+                isEmpty = False
+        else:
+            #print 'Deleting file',path
+            os.remove(path)
+    
+    return isEmpty
+
+mavenFiles = set(('maven-metadata-local.xml', '_maven.repositories'))
+
+def deleteMavenFiles(folder):
+    names = os.listdir(folder)
+    
+    for name in names:
+        path = os.path.join(folder, name)
+        
+        if os.path.isdir(path):
+            deleteMavenFiles(path)
+        elif name in mavenFiles:
+            os.remove(path)
+
 def main(name, argv):
     downloadMaven3()
     unpackMaven3()
@@ -309,7 +352,14 @@ def main(name, argv):
     for archive in argv:
         archive = downloadArchive(archive)
         path = unpackArchive(archive)
-        importIntoTmpRepo(path)
-    
+        tool = importIntoTmpRepo(path)
+        
+        m2repo = tool.m2repo
+        print('Deleting non-Eclipse artifacts...')
+        deleteCommonFiles(m2repo, templateRepo)
+        print('OK')
+        
+        deleteMavenFiles(m2repo)
+        
 if __name__ == '__main__':
     main(sys.argv[0], sys.argv[1:])
