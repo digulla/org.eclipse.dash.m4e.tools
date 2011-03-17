@@ -344,7 +344,17 @@ def deleteMavenFiles(folder):
         elif name in mavenFiles:
             os.remove(path)
 
+helpOptions = frozenset(('--help', '-h', '-help', '-?', 'help'))
+
 def main(name, argv):
+    print('%s %s' % (name, VERSION))
+    if not argv or set(argv) & helpOptions:
+        print('Usage: %s <archives...>')
+        print('')
+        print('Import the set of archives into Maven 2 repositories in')
+        print(workDir)
+        return
+    
     downloadMaven3()
     unpackMaven3()
     loadNecessaryPlugins()
