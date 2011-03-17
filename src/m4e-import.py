@@ -91,6 +91,11 @@ archiveExtensions=('.tar.gz', '.tar.bz2', '.zip')
 
 def unpackArchive(archive):
     '''Unpack an archive for import'''
+    
+    # If the archive is already unpacked, use the directory
+    if os.path.dirname(archive):
+        return archive
+    
     dirName = os.path.basename(archive)
     
     for ext in archiveExtensions:
@@ -182,7 +187,7 @@ class ImportTool(object):
     
     def wait(self, child, log):
         import re
-        partPattern = re.compile(r'/\\')
+        partPattern = re.compile(r'[/\\]')
         
         for line in child.stdout:
             log.write(line)
