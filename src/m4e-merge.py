@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 '''
 Small tool to merge several Maven 2 repositories
 
@@ -17,15 +18,18 @@ helpOptions = frozenset(('--help', '-h', '-help', '-?', 'help'))
 def merge(source, target):
     names = os.listdir(source)
     
+    if not os.path.exists(target):
+        os.makedirs(target)
+    
     for name in names:
         srcPath = os.path.join(source, name)
         targetPath = os.path.join(target, name)
         
         if os.path.isdir(srcPath):
-            if not os.path.isdir(targetPath):
+            if os.path.exists(targetPath) and not os.path.isdir(targetPath):
                 raise RuntimeError("%s is a directory but %s is a file" % (srcPath, targetPath))
             
-            merge(source, target)
+            merge(srcPath, targetPath)
         else:
             if os.path.isdir(targetPath):
                 raise RuntimeError("%s is a file but %s is a directory" % (srcPath, targetPath))
@@ -33,14 +37,15 @@ def merge(source, target):
             if os.path.exists(targetPath):
                 equal = filecmp.cmp(srcPath, targetPath)
                 if not equal:
-                    raise RuntimeError("%s exists but it differs from %s" % (targetPath, srcPath))
+                    print("WARNING %s differs from %s" % (targetPath, srcPath))
+                pass
             else:
                 os.link(srcPath, targetPath)
 
 def main(name, argv):
     print('%s %s' % (name, VERSION))
     if not argv or set(argv) & helpOptions:
-        print('Usage: %s <archives...> <result>')
+        print('Usage: %s <m2repos...> <result>')
         print('')
         print('Merge the files in the various Maven 2 repositories into one repositories')
         print(workDir)
