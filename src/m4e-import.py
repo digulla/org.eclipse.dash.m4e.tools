@@ -245,7 +245,14 @@ class ImportTool(object):
                 groupId = os.path.dirname(path)
                 groupId = partPattern.sub('.', groupId)
                 
-                msg = 'Installing %s of %s %s:%s:%s' % (min, max, groupId, artifactId, version) + ' '*80
+                msg1 = 'Installing %s of %s ' % (min, max)
+                msg2 = '%s:%s:%s' % (groupId, artifactId, version)
+                
+                if len(msg1) + len(msg2) > 79:
+                    rest = 79 - len(msg1)
+                    msg2 = msg2[-rest:]
+                
+                msg = msg1 + msg2 + ' '*80
                 msg = msg[:80] + '\r'
                 
                 sys.stdout.write(msg)
