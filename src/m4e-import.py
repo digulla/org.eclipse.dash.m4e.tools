@@ -24,7 +24,7 @@ import shutil
 
 workDir = os.path.abspath('../tmp')
 
-VERSION = '0.1 (17.03.2011)'
+VERSION = '0.2 (18.03.2011)'
 MVN_VERSION = '3.0.3'
 
 def download(url, path):
@@ -103,7 +103,7 @@ def unpackArchive(archive):
     '''Unpack an archive for import'''
     
     # If the archive is already unpacked, use the directory
-    if os.path.dirname(archive):
+    if os.path.isdir(archive):
         return archive
     
     dirName = os.path.basename(archive)
