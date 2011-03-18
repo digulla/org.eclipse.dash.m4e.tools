@@ -116,14 +116,36 @@ def unpackArchive(archive):
     if os.path.exists(os.path.join(path)):
         return path
     
-    import tarfile
-    
     print('Unpacking %s' % (archive,))
-    archive = tarfile.open(archive, 'r:*')
-    archive.extractall(path)
+    
+    if archive.endswith('.zip'):
+        unpackZipArchive(archive, path)
+    else:
+        import tarfile
+        
+        archive = tarfile.open(archive, 'r:*')
+        archive.extractall(path)
+    
     print('OK')
     
     return path
+
+def unpackZipArchive(archive, path):
+    import zipfile
+
+    archive = zipfile.ZipFile(archive, 'r')
+    # For some reason, extractall() doesn't work on maven.eclipse.org
+    for info in archive.infolist():
+        #print info.filename, info.compress_type, info.extract_version, info.file_size
+        if info.filename[0] == '/' or info.filename.startswith('../') or '/../' in info.filename:
+            print('Skipped suspicious entry "%s"' % info.filename)
+            continue
+        
+        if info.filename[-1] == '/':
+            dest = os.path.join(path, info.filename)
+            os.makedirs(dest)
+        else:
+            archive.extract(info.filename, path)
 
 def locate(root, pattern):
     '''Locate a directory which contains a certain file.'''
@@ -191,9 +213,9 @@ class ImportTool(object):
         
         rc = child.returncode
         if rc != 0:
-            print("Arguments: " + args )
-            print("Log file: " + self.logFile )
-            raise RuntimeError("Importing the plug-ins from %s failed with RC=%d", (self.eclipseFolder, rc))
+            print("Arguments: %s" % (args,))
+            print("Log file: %s" % self.logFile )
+            raise RuntimeError("Importing the plug-ins from %s failed with RC=%d" % (self.eclipseFolder, rc))
     
     def wait(self, child, log):
         import re
