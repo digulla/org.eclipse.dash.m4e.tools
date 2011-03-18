@@ -1,3 +1,21 @@
 This project collects a couple of tools to convert Eclipse downloads
 and installations into Maven 2 repositories.
- 
+
+NOTE: Right now, all tools are hardwired to write the results to
+"../tmp/". So if you start them with "org.eclipse.dash.m4e.tools/src/"
+being the current folder, the path will be "org.eclipse.dash.m4e.tools/tmp/"
+
+If you start the scripts from the folder which contains this README,
+the tmp folder will be created outside the project.
+
+A typical session looks like this:
+
+> ./m4e-import.py ~/eclipse-3.6
+> ./m4e-import.py ~/Downloads/eclipse-platform-SDK-3.6.2-linux-gtk-x86_64.tar.gz
+> ./m4e-merge.py ../tmp/*_home/m2repo ../tmp/m2repo
+> ./m4e-attach-sources.py ../tmp/m2repo/
+
+This imports all plug-ins from an existing Eclipse 3.6 install, adds the source
+plug-ins from the SDK download, and merges the two new Maven 2 repositories.
+
+The last step moves the source JARs in the right place.
