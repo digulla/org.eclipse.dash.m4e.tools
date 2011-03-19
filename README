@@ -12,7 +12,7 @@ A typical session looks like this:
 
 > ./m4e-import.py ~/eclipse-3.6
 > ./m4e-import.py ~/Downloads/eclipse-platform-SDK-3.6.2-linux-gtk-x86_64.tar.gz
-> ./m4e-merge.py ../tmp/*_home/m2repo ../tmp/m2repo
+> ./m4e-merge.py ../tmp/*eclipse*_home/m2repo ../tmp/m2repo
 > ./m4e-attach-sources.py ../tmp/m2repo/
 
 This imports all plug-ins from an existing Eclipse 3.6 install, adds the source
