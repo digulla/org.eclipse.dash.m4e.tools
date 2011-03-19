@@ -20,8 +20,9 @@ Created on Mar 17, 2011
 import os
 import sys
 import filecmp
+import time
 
-VERSION = '0.1 (17.03.2011)'
+VERSION = '0.5 (19.03.2011)'
 
 def merge(source, target):
     names = os.listdir(source)
@@ -45,7 +46,7 @@ def merge(source, target):
             if os.path.exists(targetPath):
                 equal = filecmp.cmp(srcPath, targetPath)
                 if not equal:
-                    print("WARNING %s differs from %s" % (targetPath, srcPath))
+                    log("WARNING %s differs from %s" % (targetPath, srcPath))
                 pass
             else:
                 os.link(srcPath, targetPath)
@@ -53,8 +54,8 @@ def merge(source, target):
 helpOptions = frozenset(('--help', '-h', '-help', '-?', 'help'))
 
 def main(name, argv):
-    print('%s %s' % (name, VERSION))
     if not argv or set(argv) & helpOptions:
+        print('%s %s' % (name, VERSION))
         print('Usage: %s <m2repos...> <result>')
         print('')
         print('Merge the files in the various Maven 2 repositories into one repositories')
@@ -65,8 +66,33 @@ def main(name, argv):
     if os.path.exists(target):
         raise RuntimeError('Target repository %s already exists. Cowardly refusing to continue.' % target)
     
+    if not os.path.exists(target):
+        os.makedirs(target)
+    
+    global logFile
+    logFile = open(target + ".log", 'a')
+    log('%s %s' % (name, VERSION))
+    
     for source in argv[:-1]:
+        log('Merging %s' % source)
         merge(source, target)
-        
+
+logFile = None
+def log(msg):
+    print(msg)
+    
+    if logFile is not None:
+        logFile.write(time.strftime('%Y%m%d-%H%M%S '))
+        logFile.write(msg)
+        logFile.write('\n')
+        logFile.flush()
+
 if __name__ == '__main__':
-    main(sys.argv[0], sys.argv[1:])
+    try:
+        main(sys.argv[0], sys.argv[1:])
+    except Exception as e:
+        log('%s' % e)
+        raise
+    finally:
+        if logFile is not None:
+            logFile.close()
