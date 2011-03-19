@@ -20,10 +20,11 @@ Maven 2 to pick them up.
 
 @author: Aaron Digulla <digulla@hepe.com>
 """
-import os, sys
-from shutil import copyfile
+import os
+import sys
+import time
 
-VERSION = '0.9 (17.03.2011)'
+VERSION = '1.0 (19.03.2011)'
 
 def process(root):
     for name in os.listdir(root):
@@ -39,7 +40,7 @@ def processSource(srcPath):
     binPath = srcPath[:-7] 
     
     if not os.path.exists(binPath):
-        print('WARNING: Missing %s' % binPath)
+        log('WARNING: Missing %s' % binPath)
         return
     
     versions = os.listdir(srcPath)
@@ -57,7 +58,7 @@ def processSourceVersion(srcPath, binPath, version):
     binPath = os.path.join(binPath, version)
     
     if not os.path.exists(binPath):
-        print('WARNING: Missing %s' % binPath)
+        log('WARNING: Missing %s' % binPath)
         return
     
     sources = os.listdir(srcPath)
@@ -71,7 +72,7 @@ def processSourceVersion(srcPath, binPath, version):
             moveSource(srcPath, binPath, name)
             continue
         
-        print('WARNING: Unexpected file %s' % os.path.join(srcPath, name))
+        log('WARNING: Unexpected file %s' % os.path.join(srcPath, name))
         canDelete = False
     
     if canDelete:
@@ -106,8 +107,8 @@ def moveSource(srcPath, binPath, name):
 helpOptions = frozenset(('--help', '-h', '-help', '-?', 'help'))
 
 def main(name, argv):
-    print('%s %s' % (name, VERSION))
     if not argv or set(argv) & helpOptions:
+        print('%s %s' % (name, VERSION))
         print('Usage: %s <m2repo>')
         print('')
         print('Move the sources of Eclipse plugins to the right place')
@@ -121,7 +122,29 @@ def main(name, argv):
     if not os.path.isdir(root):
         raise RuntimeError('%s is not a directory' % root)
     
+    global logFile
+    logFile = open(root + ".log", 'a')
+    log('%s %s' % (name, VERSION))
+
+    log('Attaching sources in %s' % root)
     process(root)
 
+logFile = None
+def log(msg):
+    print(msg)
+    
+    if logFile is not None:
+        logFile.write(time.strftime('%Y%m%d-%H%M%S '))
+        logFile.write(msg)
+        logFile.write('\n')
+        logFile.flush()
+
 if __name__ == '__main__':
-    main(sys.argv[0], sys.argv[1:])
+    try:
+        main(sys.argv[0], sys.argv[1:])
+    except Exception as e:
+        log('%s' % e)
+        raise
+    finally:
+        if logFile is not None:
+            logFile.close()
