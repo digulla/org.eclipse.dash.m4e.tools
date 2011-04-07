@@ -17,7 +17,6 @@ Created on Apr 7, 2011
 '''
 
 import os.path
-import os
 import types
 from lxml import etree
 # TODO Evaluate objectify

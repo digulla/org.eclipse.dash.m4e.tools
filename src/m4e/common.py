@@ -16,7 +16,6 @@ Created on Apr 7, 2011
 @author: Aaron Digulla <digulla@hepe.com>
 '''
 
-import logging
 import logging.handlers
 import sys
 import os.path
