@@ -46,3 +46,12 @@ def configLogger(fileName):
     handler.setFormatter(logging.Formatter(fmt='%(message)s'))
 
     root.addHandler(handler)
+
+def mustBeDirectory(path):
+    if not os.path.exists(path):
+        raise RuntimeError("%s doesn't exist" % path)
+    
+    if not os.path.isdir(path):
+        raise RuntimeError('%s is not a directory' % path)
+    
+    return path
