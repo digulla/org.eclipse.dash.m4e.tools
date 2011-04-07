@@ -30,87 +30,98 @@ VERSION = '1.1 (07.04.2011)'
 
 log = logging.getLogger('m4e.attach_sources')
 
-def process(root):
-    for name in os.listdir(root):
-        path = os.path.join(root, name)
+class AttachSources(object):
+    def __init__(self):
+        self.count = 0
         
-        if os.path.isdir(path):
-            if path.endswith('.source'):
-                processSource(path)
-            else:
-                process(path)
+    def run(self, root):
+        log.info('Attaching sources in %s' % root)
+        self.process(root)
+        log.info('Found %d source JARs' % self.count)
 
-def processSource(srcPath):
-    binPath = srcPath[:-7] 
+    def process(self, root):
+        for name in os.listdir(root):
+            path = os.path.join(root, name)
+            
+            if os.path.isdir(path):
+                if path.endswith('.source'):
+                    self.processSource(path)
+                else:
+                    self.process(path)
     
-    if not os.path.exists(binPath):
-        log.warning('Missing %s' % binPath)
-        return
+    def processSource(self, srcPath):
+        binPath = srcPath[:-7] 
+        
+        if not os.path.exists(binPath):
+            log.warning('Missing %s' % binPath)
+            return
+        
+        versions = os.listdir(srcPath)
+        
+        canDelete = True
+        for version in versions:
+            if not self.processSourceVersion(srcPath, binPath, version):
+                canDelete = False
+        
+        if canDelete:
+            os.rmdir(srcPath)
     
-    versions = os.listdir(srcPath)
-    
-    canDelete = True
-    for version in versions:
-        if not processSourceVersion(srcPath, binPath, version):
+    def processSourceVersion(self, srcPath, binPath, version):
+        srcPath = os.path.join(srcPath, version)
+        binPath = os.path.join(binPath, version)
+        
+        if not os.path.exists(binPath):
+            log.warning('Missing %s' % binPath)
+            return
+        
+        sources = os.listdir(srcPath)
+        canDelete = True
+        for name in sources:
+            if name.endswith('.pom'):
+                pom = os.path.join(srcPath, name)
+                log.debug('Deleting source POM %s' % pom)
+                os.remove(pom)
+                continue
+            
+            if name.endswith('.jar'):
+                self.moveSource(srcPath, binPath, name)
+                continue
+            
+            log.warning('Unexpected file %s' % os.path.join(srcPath, name))
             canDelete = False
-    
-    if canDelete:
-        os.rmdir(srcPath)
-
-def processSourceVersion(srcPath, binPath, version):
-    srcPath = os.path.join(srcPath, version)
-    binPath = os.path.join(binPath, version)
-    
-    if not os.path.exists(binPath):
-        log.warning('Missing %s' % binPath)
-        return
-    
-    sources = os.listdir(srcPath)
-    canDelete = True
-    for name in sources:
-        if name.endswith('.pom'):
-            pom = os.path.join(srcPath, name)
-            log.debug('Deleting source POM %s' % pom)
-            os.remove(pom)
-            continue
         
-        if name.endswith('.jar'):
-            moveSource(srcPath, binPath, name)
-            continue
+        if canDelete:
+            log.debug('%s is empty -> deleting' % srcPath)
+            os.rmdir(srcPath)
         
-        log.warning('Unexpected file %s' % os.path.join(srcPath, name))
-        canDelete = False
+        return canDelete
     
-    if canDelete:
-        log.debug('%s is empty -> deleting' % srcPath)
-        os.rmdir(srcPath)
-    
-    return canDelete
-
-def moveSource(srcPath, binPath, name):
-    # name = org.eclipse.core.runtime.source-3.6.0.jar
-    pos1 = name.rindex('-')
-    pos2 = name.rindex('.')
-    
-    version = name[pos1+1:pos2]
-    baseName = name[:pos1]
-    
-    if not baseName.endswith('.source'):
-        raise RuntimeError('Unexpected file %s' % os.path.join(srcPath, name))
-    
-    baseName = baseName[:baseName.rindex('.')]
-    
-    binName = '%s-%s.jar' % (baseName, version)
-    target = '%s-%s-sources.jar' % (baseName, version)
-    
-    binJar = os.path.join(binPath, binName)
-    if not os.path.exists(binJar):
-        raise RuntimeError('Missing file %s' % os.path.join(binJar))
-    
-    src = os.path.join(srcPath, name)
-    target = os.path.join(binPath, target)
-    log.debug('Moving %s to %s' % (src, target))
-    os.rename(src, target)
+    def moveSource(self, srcPath, binPath, name):
+        # name = org.eclipse.core.runtime.source-3.6.0.jar
+        pos1 = name.rindex('-')
+        pos2 = name.rindex('.')
+        
+        version = name[pos1+1:pos2]
+        baseName = name[:pos1]
+        
+        if not baseName.endswith('.source'):
+            raise RuntimeError('Unexpected file %s' % os.path.join(srcPath, name))
+        
+        baseName = baseName[:baseName.rindex('.')]
+        
+        binName = '%s-%s.jar' % (baseName, version)
+        target = '%s-%s-sources.jar' % (baseName, version)
+        
+        binJar = os.path.join(binPath, binName)
+        if not os.path.exists(binJar):
+            raise RuntimeError('Missing file %s' % os.path.join(binJar))
+        
+        src = os.path.join(srcPath, name)
+        target = os.path.join(binPath, target)
+        log.debug('Moving %s to %s' % (src, target))
+        os.rename(src, target)
+        
+        self.count += 1
 
 helpOptions = frozenset(('--help', '-h', '-help', '-?', 'help'))
 
@@ -133,8 +144,8 @@ def main(name, argv):
     configLogger(root + ".log")
     log.info('%s %s' % (name, VERSION))
 
-    log.info('Attaching sources in %s' % root)
-    process(root)
+    tool = AttachSources()
+    tool.run(root)
 
 if __name__ == '__main__':
     try:
