@@ -194,3 +194,9 @@ def test_patchScope_3():
     
     expected = POM_WITH_RHINO_DEPENDENCY.replace('      <optional>false</optional>\n', '')
     compareStrings(expected, repr(pom))
+
+def test_noDependencies():
+    xml = '<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"></project>'
+    pom = Pom(StringIO.StringIO(xml))
+    
+    eq_([], pom.dependencies())

@@ -188,7 +188,11 @@ class Pom(object):
         self.project = PomElement(self.xml, self.xml.getroot())
     
     def dependencies(self):
-        result = self.project.dependencies.dependency
+        deps = self.project.dependencies
+        if deps is None:
+            return []
+        
+        result = deps.dependency
         if result is None:
             return []
         
