@@ -23,8 +23,12 @@ Maven 2 to pick them up.
 import os
 import sys
 import time
+import logging
+from m4e.common import configLogger
 
-VERSION = '1.0 (19.03.2011)'
+VERSION = '1.1 (07.04.2011)'
+
+log = logging.getLogger('m4e.attach_sources')
 
 def process(root):
     for name in os.listdir(root):
@@ -40,7 +44,7 @@ def processSource(srcPath):
     binPath = srcPath[:-7] 
     
     if not os.path.exists(binPath):
-        log('WARNING: Missing %s' % binPath)
+        log.warning('Missing %s' % binPath)
         return
     
     versions = os.listdir(srcPath)
@@ -58,24 +62,27 @@ def processSourceVersion(srcPath, binPath, version):
     binPath = os.path.join(binPath, version)
     
     if not os.path.exists(binPath):
-        log('WARNING: Missing %s' % binPath)
+        log.warning('Missing %s' % binPath)
         return
     
     sources = os.listdir(srcPath)
     canDelete = True
     for name in sources:
         if name.endswith('.pom'):
-            os.remove(os.path.join(srcPath, name))
+            pom = os.path.join(srcPath, name)
+            log.debug('Deleting source POM %s' % pom)
+            os.remove(pom)
             continue
         
         if name.endswith('.jar'):
             moveSource(srcPath, binPath, name)
             continue
         
-        log('WARNING: Unexpected file %s' % os.path.join(srcPath, name))
+        log.warning('Unexpected file %s' % os.path.join(srcPath, name))
         canDelete = False
     
     if canDelete:
+        log.debug('%s is empty -> deleting' % srcPath)
         os.rmdir(srcPath)
     
     return canDelete
@@ -102,6 +109,7 @@ def moveSource(srcPath, binPath, name):
     
     src = os.path.join(srcPath, name)
     target = os.path.join(binPath, target)
+    log.debug('Moving %s to %s' % (src, target))
     os.rename(src, target)
 
 helpOptions = frozenset(('--help', '-h', '-help', '-?', 'help'))
@@ -121,30 +129,16 @@ def main(name, argv):
     
     if not os.path.isdir(root):
         raise RuntimeError('%s is not a directory' % root)
-    
-    global logFile
-    logFile = open(root + ".log", 'a')
-    log('%s %s' % (name, VERSION))
 
-    log('Attaching sources in %s' % root)
+    configLogger(root + ".log")
+    log.info('%s %s' % (name, VERSION))
+
+    log.info('Attaching sources in %s' % root)
     process(root)
-
-logFile = None
-def log(msg):
-    print(msg)
-    
-    if logFile is not None:
-        logFile.write(time.strftime('%Y%m%d-%H%M%S '))
-        logFile.write(msg)
-        logFile.write('\n')
-        logFile.flush()
 
 if __name__ == '__main__':
     try:
         main(sys.argv[0], sys.argv[1:])
     except Exception as e:
-        log('%s' % e)
+        log.error('%s' % e)
         raise
-    finally:
-        if logFile is not None:
-            logFile.close()

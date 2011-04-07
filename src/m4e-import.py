@@ -21,11 +21,15 @@ Created on Mar 17, 2011
 import sys
 import os.path
 import shutil
+import logging
+from m4e.common import configLogger
 
 workDir = os.path.abspath('../tmp')
 
-VERSION = '0.2 (18.03.2011)'
+VERSION = '0.9 (07.04.2011)'
 MVN_VERSION = '3.0.3'
+
+log = logging.getLogger('m4e.import')
 
 def download(url, path):
     '''Download the resource to a local path'''
@@ -53,28 +57,31 @@ def downloadMaven3():
     '''Download Maven 3 if necessary'''
     path = os.path.join(workDir, m3archive)
     if os.path.exists(path):
+        log.debug('Maven 3 was already downloaded at %s' % path)
         return
     
     downloadUrl = 'http://mirror.switch.ch/mirror/apache/dist//maven/binaries/' + m3archive
     
-    print('Downloading Maven 3...')
+    log.info('Downloading Maven 3...')
     download(downloadUrl, path)
-    print('OK')
+    log.info('OK')
 
 def unpackMaven3():
     '''Unpack the downloaded Maven 3 archive'''
     archivePath = os.path.join(workDir, m3archive)
     unpackedPath = 'apache-maven-%s' % MVN_VERSION
     
-    if os.path.exists(os.path.join(workDir, unpackedPath)):
+    path = os.path.join(workDir, unpackedPath)
+    if os.path.exists(path):
+        log.debug('Maven 3 was already unpacked at %s' % path)
         return
     
     import tarfile
     
-    print('Unpacking Maven 3 archive')
+    log.info('Unpacking Maven 3 archive')
     archive = tarfile.open(archivePath, 'r:*')
     archive.extractall(workDir)
-    print('OK')
+    log.info('OK')
 
 def downloadArchive(archive):
     '''Download an archive via HTTP.
@@ -83,17 +90,19 @@ def downloadArchive(archive):
     This function returns the name of the downloaded file.
     '''
     if not archive.startswith('http://'):
+        log.debug("Archive URL %s seems to be local" % archive)
         return archive
     
     basename = os.path.basename(archive)
     path = os.path.join(workDir, basename)
     
     if os.path.exists(path):
+        log.debug('Archive %s has already been downloaded' % path)
         return path
     
-    print('Downloading %s to %s' % (archive, path))
+    log.info('Downloading %s to %s' % (archive, path))
     download(archive, path)
-    print('OK')
+    log.info('OK')
     
     return path
 
@@ -104,6 +113,7 @@ def unpackArchive(archive):
     
     # If the archive is already unpacked, use the directory
     if os.path.isdir(archive):
+        log.debug('Archive %s is a directory; no need to unpack' % archive)
         return archive
     
     dirName = os.path.basename(archive)
@@ -113,10 +123,11 @@ def unpackArchive(archive):
             dirName = dirName[:-len(ext)]
     
     path = os.path.join(workDir, dirName)
-    if os.path.exists(os.path.join(path)):
+    if os.path.exists(path):
+        log.debug('Archive %s is already unpacked at %s' % (archive, path))
         return path
     
-    print('Unpacking %s' % (archive,))
+    log.info('Unpacking %s' % (archive,))
     
     if archive.endswith('.zip'):
         unpackZipArchive(archive, path)
@@ -126,7 +137,7 @@ def unpackArchive(archive):
         archive = tarfile.open(archive, 'r:*')
         archive.extractall(path)
     
-    print('OK')
+    log.info('OK')
     
     return path
 
@@ -136,9 +147,9 @@ def unpackZipArchive(archive, path):
     archive = zipfile.ZipFile(archive, 'r')
     # For some reason, extractall() doesn't work on maven.eclipse.org
     for info in archive.infolist():
-        #print info.filename, info.compress_type, info.extract_version, info.file_size
+        log.debug('%s %s %s %s' % (info.filename, info.compress_type, info.extract_version, info.file_size))
         if info.filename[0] == '/' or info.filename.startswith('../') or '/../' in info.filename:
-            print('Skipped suspicious entry "%s"' % info.filename)
+            log.warning('Skipped suspicious entry "%s"' % info.filename)
             continue
         
         if info.filename[-1] == '/':
@@ -158,7 +169,8 @@ def locate(root, pattern):
         path = os.path.join(root, name)
         if os.path.isdir(path):
             result = locate(path, pattern)
-            if result: return result
+            if result:
+                return result
     
     return None
 
@@ -176,27 +188,23 @@ class ImportTool(object):
         self.m2dir = os.path.join(self.tmpHome, '.m2')
         self.m2repo = os.path.join(self.tmpHome, 'm2repo')
         self.m2settings = os.path.join(self.m2dir, 'settings.xml')
-        self.logFile = self.path + '.log'
 
     def run(self):
         self.clean()
         self.writeSettings()
         
-        print('Importing plug-ins from %s into %s' % (self.eclipseFolder, self.m2repo))
+        log.info('Importing plug-ins from %s into %s' % (self.eclipseFolder, self.m2repo))
     
-        with open(self.logFile, 'w') as log:
-            self.doImport(log)
+        self.doImport()
 
-        print('OK')
+        log.info('OK')
         
-    def doImport(self, log):
+    def doImport(self):
         args = self.args()
         env = self.env()
         
-        log.write('Arguments: %s\n' % (args,))
-        log.write('M2_HOME: %s\n' % env['M2_HOME'])
-        log.write('\n\n\n')
-        log.flush()
+        log.debug('Arguments: %s\n' % (args,))
+        log.debug('M2_HOME: %s\n' % env['M2_HOME'])
         
         import subprocess
 
@@ -208,22 +216,21 @@ class ImportTool(object):
             bufsize=1,
             universal_newlines=True
         )
-        self.wait(child, log)
+        self.wait(child)
         child.wait()
         
         rc = child.returncode
         if rc != 0:
-            print("Arguments: %s" % (args,))
-            print("Log file: %s" % self.logFile )
+            log.error("Arguments: %s" % (args,))
+            log.error("Log file: %s" % self.logFile )
             raise RuntimeError("Importing the plug-ins from %s failed with RC=%d" % (self.eclipseFolder, rc))
     
-    def wait(self, child, log):
+    def wait(self, child):
         import re
         partPattern = re.compile(r'[/\\]')
         
         for line in child.stdout:
-            log.write(line)
-            log.flush()
+            log.debug( 'child: %s' % line)
             
             if line.startswith('[INFO] Processing '):
                 parts = line.split(' ')
@@ -325,7 +332,7 @@ def loadNecessaryPlugins():
     if os.path.exists(templateRepo):
         return
     
-    print('Downloading necessary plug-ins for Maven 3')
+    log.info('Downloading necessary plug-ins for Maven 3')
     archive = downloadArchive(primingArchive)
     path = unpackArchive(archive)
     importIntoTmpRepo(path)
@@ -343,7 +350,7 @@ def loadNecessaryPlugins():
     # Restore what we saved above
     shutil.copytree(backupDir, os.path.join(eclipseDir, 'core', 'resources'))
     
-    print('OK')
+    log.info('OK')
 
 def deleteCommonFiles(folder, mask):
     #print 'deleteCommonFiles',folder,mask
@@ -391,7 +398,10 @@ def deleteMavenFiles(folder):
 helpOptions = frozenset(('--help', '-h', '-help', '-?', 'help'))
 
 def main(name, argv):
-    print('%s %s' % (name, VERSION))
+    configLogger(os.path.join(workDir, 'm4e-import.log'))
+    
+    log.info('%s %s' % (name, VERSION))
+    log.debug('workDir=%s' % os.path.abspath(workDir))
     if not argv or set(argv) & helpOptions:
         print('Usage: %s <archives...>')
         print('')
@@ -409,11 +419,16 @@ def main(name, argv):
         tool = importIntoTmpRepo(path)
         
         m2repo = tool.m2repo
-        print('Deleting non-Eclipse artifacts...')
+        log.info('Deleting non-Eclipse artifacts...')
         deleteCommonFiles(m2repo, templateRepo)
-        print('OK')
+        log.info('OK')
         
         deleteMavenFiles(m2repo)
         
 if __name__ == '__main__':
-    main(sys.argv[0], sys.argv[1:])
+    try:
+        main(sys.argv[0], sys.argv[1:])
+    except Exception as e:
+        log.error('%s' % e)
+        raise
+        
