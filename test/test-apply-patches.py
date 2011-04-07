@@ -119,7 +119,7 @@ def test_dependencyFromString_4():
 def test_ApplyPatches():
     
     loader = PatchLoader('../patches')
-    loader.patches.insert(0, RemoveNonOptional())
+    loader.addRemoveNonOptional()
     loader.run()
     
     eq_('[RemoveNonOptional(), Patches(../patches/birt-2.6.2.patches)]', repr(loader.patches))

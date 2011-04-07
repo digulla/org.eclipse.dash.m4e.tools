@@ -139,6 +139,9 @@ class PatchLoader(object):
         self.path = path
         self.patches = []
     
+    def addRemoveNonOptional(self):
+        self.patches.append(RemoveNonOptional())
+    
     def run(self):
         self.process(self.path)
     
