@@ -18,6 +18,8 @@ After importing Eclipse artifacts into an M2 repository with
 run this script to move all source JARs in the right place for
 Maven 2 to pick them up.
 
+Created on Mar 17, 2011
+
 @author: Aaron Digulla <digulla@hepe.com>
 """
 import os
