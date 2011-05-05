@@ -20,8 +20,18 @@ import logging.handlers
 import sys
 import os.path
 
+def userNeedsHelp(argv):
+    helpOptions = frozenset(('--help', '-h', '-help', '-?', 'help'))
+    
+    return not argv or set(argv) & helpOptions
+
 def configLogger(fileName):
     #logging.basicConfig(level=logging.INFO, format='%(message)s')
+    
+    path = os.path.abspath(fileName)
+    dir = os.path.dirname(path)
+    if not os.path.exists(dir):
+        os.makedirs(dir)
     
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
@@ -53,4 +63,4 @@ def mustBeDirectory(path):
     if not os.path.isdir(path):
         raise RuntimeError('%s is not a directory' % path)
     
-    return path
+    return os.path.abspath(path)
