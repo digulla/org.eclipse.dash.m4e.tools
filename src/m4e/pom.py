@@ -114,7 +114,7 @@ class Dependency(object):
                 (other.groupId, other.artifactId, other.version))
     
     def get_groupId(self):
-        return self._pomElement.groupId.xml_element.text
+        return text(self._pomElement.groupId)
     
     def set_groupId(self, groupId):
         self._pomElement.groupId.xml_element.text = groupId
@@ -122,7 +122,7 @@ class Dependency(object):
     groupId = property(get_groupId, set_groupId)
 
     def get_artifactId(self):
-        return self._pomElement.artifactId.xml_element.text
+        return text(self._pomElement.artifactId)
     
     def set_artifactId(self, artifactId):
         self._pomElement.artifactId.xml_element.text = artifactId
@@ -130,7 +130,7 @@ class Dependency(object):
     artifactId = property(get_artifactId, set_artifactId)
 
     def get_version(self):
-        return self._pomElement.version.xml_element.text
+        return text(self._pomElement.version)
     
     def set_version(self, version):
         self._pomElement.version.xml_element.text = version
@@ -159,11 +159,7 @@ class Dependency(object):
     optional = property(get_optional, set_optional)
 
     def get_scope(self):
-        elem = self._pomElement.scope
-        if elem is None:
-            return False
-        
-        return elem.xml_element.text
+        elem = text(self._pomElement.scope)
 
     def set_scope(self, value):
         elem = self._pomElement.scope
@@ -179,12 +175,27 @@ class Dependency(object):
         
     scope = property(get_scope, set_scope)
 
+def text(elem):
+    return None if elem is None else elem.xml_element.text
+
 class Pom(object):
     def __init__(self, pomFile):
         self.pomFile = pomFile
         
-        self.xml = etree.parse(self.pomFile)
+        try:
+            parser = etree.XMLParser(resolve_entities=False, recover=True)
+            self.xml = etree.parse(self.pomFile, parser=parser)
+        except:
+            print 'Error parsing %s' % self.pomFile
+            raise
+        
         self.project = PomElement(self.xml, self.xml.getroot())
+    
+    def key(self):
+        return '%s:%s:%s' % (text(self.project.groupId), text(self.project.artifactId), text(self.project.version))
+    
+    def shortKey(self):
+        return '%s:%s' % (text(self.project.groupId), text(self.project.artifactId))
     
     def dependencies(self):
         deps = self.project.dependencies
@@ -219,3 +230,4 @@ class Pom(object):
             os.rename(fileName, bak)
             
         os.rename(tmp, fileName)
+    
