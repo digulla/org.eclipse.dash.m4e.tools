@@ -176,8 +176,9 @@ def locate(root, pattern):
 
 
 class ImportTool(object):
-    def __init__(self, path):
+    def __init__(self, path, logFile):
         self.path = path
+        self.logFile = logFile
         
         self.eclipseFolder = locate(self.path, 'plugins')
         if not self.eclipseFolder:
@@ -190,11 +191,11 @@ class ImportTool(object):
         self.m2settings = os.path.join(self.m2dir, 'settings.xml')
 
     def run(self):
+        log.info('Importing plug-ins from %s into %s' % (self.eclipseFolder, self.m2repo))
+    
         self.clean()
         self.writeSettings()
         
-        log.info('Importing plug-ins from %s into %s' % (self.eclipseFolder, self.m2repo))
-    
         self.doImport()
 
         log.info('OK')
@@ -230,7 +231,7 @@ class ImportTool(object):
         partPattern = re.compile(r'[/\\]')
         
         for line in child.stdout:
-            log.debug( 'child: %s' % line)
+            log.debug( 'child: %s' % line.rstrip())
             
             if line.startswith('[INFO] Processing '):
                 parts = line.split(' ')
@@ -292,11 +293,13 @@ class ImportTool(object):
     def clean(self):
         '''Make sure we don't have any leftovers from previous attempts.'''
         if os.path.exists(self.tmpHome):
+            log.info('Cleaning up from last run...')
             shutil.rmtree(self.tmpHome)
         
         os.makedirs(self.m2dir)
 
         if os.path.exists(templateRepo):
+            log.info('Copying template...')
             shutil.copytree(templateRepo, self.m2repo)
 
     def args(self):
@@ -315,8 +318,8 @@ class ImportTool(object):
         return env
 
     
-def importIntoTmpRepo(path):
-    tool = ImportTool(path)
+def importIntoTmpRepo(path, logFile):
+    tool = ImportTool(path, logFile)
     tool.run()
     return tool
 
@@ -398,7 +401,8 @@ def deleteMavenFiles(folder):
 helpOptions = frozenset(('--help', '-h', '-help', '-?', 'help'))
 
 def main(name, argv):
-    configLogger(os.path.join(workDir, 'm4e-import.log'))
+    logFile = os.path.join(workDir, 'm4e-import.log')
+    configLogger(logFile)
     
     log.info('%s %s' % (name, VERSION))
     log.debug('workDir=%s' % os.path.abspath(workDir))
@@ -416,7 +420,7 @@ def main(name, argv):
     for archive in argv:
         archive = downloadArchive(archive)
         path = unpackArchive(archive)
-        tool = importIntoTmpRepo(path)
+        tool = importIntoTmpRepo(path, logFile)
         
         m2repo = tool.m2repo
         log.info('Deleting non-Eclipse artifacts...')
