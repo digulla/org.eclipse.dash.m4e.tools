@@ -20,6 +20,13 @@ import logging.handlers
 import sys
 import os.path
 
+def substringBefore( s, pattern ):
+    pos = s.find( pattern )
+    if pos == -1:
+        return None
+    
+    return s[0:pos]
+
 def userNeedsHelp(argv):
     helpOptions = frozenset(('--help', '-h', '-help', '-?', 'help'))
     
