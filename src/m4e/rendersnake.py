@@ -71,7 +71,7 @@ def defineTags(*names):
         name2 = '_%s' % name
         setattr(HtmlCanvas, name2, f)
 
-defineTags('a', 'br', 'p', 'div', 'h1', 'h2', 'h3', 'h4', 'html', 'head', 'title', 'body', 'span', 'ul', 'li', 'ol', 'style')
+defineTags('a', 'br', 'p', 'div', 'h1', 'h2', 'h3', 'h4', 'html', 'head', 'title', 'body', 'span', 'ul', 'li', 'ol', 'style', 'table', 'tr', 'td')
 
 class HtmlAttrs(object):
     def __init__(self):
@@ -100,7 +100,7 @@ def defineAttrs(*names):
 def A():
     return HtmlAttrs()
 
-defineAttrs('class_', 'id', 'style', 'href', 'type', 'onclick', 'name')
+defineAttrs('class_', 'id', 'style', 'href', 'type', 'onclick', 'name', 'border', 'cellpadding', 'cellspacing')
 
 if __name__ == '__main__':
     import sys
