@@ -16,6 +16,7 @@ Created on Apr 7, 2011
 @author: Aaron Digulla <digulla@hepe.com>
 '''
 
+import os
 import os.path
 import types
 from lxml import etree
@@ -194,8 +195,32 @@ class Pom(object):
     def key(self):
         return '%s:%s:%s' % (text(self.project.groupId), text(self.project.artifactId), text(self.project.version))
     
+    def artifactIdVersion(self):
+        return '%s:%s' % (text(self.project.artifactId), text(self.project.version))
+    
     def shortKey(self):
         return '%s:%s' % (text(self.project.groupId), text(self.project.artifactId))
+    
+    def files(self):
+        path = os.path.dirname(self.pomFile)
+        l = os.listdir(path)
+        
+        files = []
+        prefix = '%s-%s' % (text(self.project.artifactId), text(self.project.version))
+        for item in l:
+            if not item.startswith(prefix) or item.endswith('.bak'):
+                continue
+            
+            item = item[len(prefix):]
+            if item.startswith('.'):
+                item = item[1:]
+            if item.startswith('-') and item.endswith('.jar'):
+                item = item[1:-4]
+            
+            files.append(item)
+        
+        files.sort()
+        return files
     
     def dependencies(self):
         deps = self.project.dependencies
