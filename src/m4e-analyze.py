@@ -19,7 +19,7 @@ import os
 import sys
 import time
 import logging
-from m4e.common import configLogger, mustBeDirectory, userNeedsHelp
+from m4e.common import configLogger, mustBeDirectory, userNeedsHelp, substringBefore
 from m4e.patches import PatchLoader, PatchTool
 from m4e.pom import Pom
 from m4e.rendersnake import *
@@ -48,11 +48,31 @@ class Problem(object):
         .span( A().class_( 'message' ) ).write( self.message )._span() \
         ._div()
 
+class ProblemSameKeyDifferentVersion(Problem):
+    htmlTitle = 'POMs with same ID but different version'
+
+    def __init__(self, pom, other):
+        Problem.__init__(self, pom, 'There is another POM with the same ID but a different version')
+        
+        self.other = other
+
+    def __repr__(self):
+        return 'POM %s: %s: %s' % (self.pom.key(), self.message, self.other.key())
+    
+    def renderOn(self, html):
+        html.div( A().class_( 'problem' ) ) \
+        .write( 'There are two POMs with the same ID but different version:' ) \
+        .ul() \
+        .li().span( A().class_( 'pom' ) ).write( self.pom.key() )._span()._li() \
+        .li().span( A().class_( 'pom' ) ).write( self.other.key() )._span()._li() \
+        ._ul() \
+        ._div()
+    
 class ProblemWithDependency(Problem):
     htmlTitle = 'Problems With Dependencies'
     
-    def __init__(self, pom, message, dependency):
-        Problem.__init__(self, pom, message)
+    def __init__(self, pom, dependency):
+        Problem.__init__(self, pom, 'Missing version in dependency')
         
         self.dependency = dependency
     
@@ -118,7 +138,11 @@ class ProblemDifferentVersions(Problem):
             html.ul()
             
             for pom in backRefs:
-                html.li().span(A().class_('pom')).write( pom.key() )._span()._li()
+                parts = pom.key().split(':')
+                html.li().span(A().class_('pom')).write( '%s:%s' % (parts[0], parts[1]) )._span() \
+                .write(':') \
+                .span(A().class_('version')).write( parts[2] )._span() \
+                ._li()
             
             html._ul()
             
@@ -213,6 +237,9 @@ class Analyzer(object):
         log.debug('Analyzing %s %s' % (pomFile, pom.key()))
         
         shortKey = pom.shortKey()
+        other = self.pomByKey.get(shortKey, None)
+        if other is not None:
+            self.newProblem(ProblemSameKeyDifferentVersion(pom, other))
         self.pomByKey[shortKey] = pom
         
         for d in pom.dependencies():
@@ -221,7 +248,7 @@ class Analyzer(object):
             dependencies.append( pom )
             
             if not d.version or d.version == '[0,)':
-                self.newProblem(ProblemWithDependency(pom, 'Missing version in dependency', d))
+                self.newProblem(ProblemWithDependency(pom, d))
             
             versions = self.versions.setdefault(key, set())
             versions.add( d.version )
@@ -262,7 +289,41 @@ class Analyzer(object):
             
             self.renderProblemsAsHtml(html)
             
+            self.renderRepoAsHtml(html)
+            
             html._body().write('\n')._html().write('\n')
+
+    def renderRepoAsHtml(self, html):
+        html.h2().a(A().name('poms')).write("POMs in the repository")._a()._h2()
+        
+        pomShortKeys = list(self.pomByKey.keys())
+        pomShortKeys.sort()
+        
+        html.table(A().border('0').cellspacing('0').cellpadding('0'))
+        
+        currentLabel = ''
+        for shortKey in pomShortKeys:
+            label = substringBefore(shortKey, ':')
+            
+            if label != currentLabel:
+                currentLabel = label
+            else:
+                label = ''
+            
+            html.tr().td().write(label)._td()
+            
+            pom = self.pomByKey[shortKey]
+            text = pom.artifactIdVersion()
+            parts = text.split(':')
+            
+            html.td().span(A().class_('pom')).write(parts[0])._span() \
+            .write(':')._td().td() \
+            .span(A().class_('version')).write(parts[1])._span() \
+            ._td().td(A().class_('padLeft')) \
+            .span(A().class_('files')).write(' ').write(' '.join(pom.files()))._span() \
+            ._td()._tr()
+
+        html._table()
 
     def renderProblemsAsHtml(self, html):
         
@@ -284,6 +345,7 @@ class Analyzer(object):
         for key in keys:
             html.li().a(A().href('#toc%d' % index)).write(key)._a()._li()
             index += 1
+        html.li().a(A().href('#poms')).write("POMs in the repository")._a()._li()
         html._ul()
         
         index = 1
@@ -303,6 +365,9 @@ class Analyzer(object):
         html.write( '.pom { font-weight: bold; color: #7F0055; font-family: monospace; }\n' )
         html.write( '.dependency { font-weight: bold; color: #55007F; font-family: monospace; }\n' )
         html.write( '.version { font-weight: bold; color: #007F55; font-family: monospace; }\n' )
+        html.write( '.files { font-style: italic; }\n' )
+        html.write( '.padLeft { padding-left: 10px; }\n' )
+        html.write( 'tr:hover { background-color: #DFDEF7; }\n' )
         
         html._style().write('\n')
 
