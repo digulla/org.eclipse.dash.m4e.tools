@@ -17,14 +17,37 @@
       <version>[3.2.0,4.0.0)</version>
     </dependency>
     <dependency>
-      <groupId>rhino</groupId>
-      <artifactId>js</artifactId>
-      <version>1.7R2</version>
-    </dependency>
-    <dependency>
       <groupId>com.ibm.icu</groupId>
       <artifactId>com.ibm.icu</artifactId>
       <version>[4.2.1,5.0.0)</version>
     </dependency>
   </dependencies>
+  <profiles>
+    <profile>
+      <id>m4e.orbit</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>org.mozilla.javascript</groupId>
+          <artifactId>org.mozilla.javascript</artifactId>
+          <version>[1.6.0,2.0.0)</version>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
+      <id>m4e.maven-central</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>rhino</groupId>
+          <artifactId>js</artifactId>
+          <version>1.7R2</version>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
 </project>

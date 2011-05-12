@@ -59,6 +59,7 @@ class HtmlCanvas(object):
         return self
 
 def defineTags(*names):
+    '''Add methods in HtmlCanvas to handle all known HTML elements'''
     for name in names:
         def f(self, attrs=None, name=name):
             return self.html_begin(name, attrs)
@@ -74,6 +75,7 @@ def defineTags(*names):
 defineTags('a', 'br', 'p', 'div', 'h1', 'h2', 'h3', 'h4', 'html', 'head', 'title', 'body', 'span', 'ul', 'li', 'ol', 'style', 'table', 'tr', 'td')
 
 class HtmlAttrs(object):
+    '''Collect all HTML attributes for this element in a list'''
     def __init__(self):
         self.attrs = []
     
@@ -87,6 +89,7 @@ class HtmlAttrs(object):
             out.write(attr)
 
 def defineAttrs(*names):
+    '''Add methods in HtmlAttrs to handle all known HTML attributes'''
     for name in names:
         attrName = name
         if attrName.endswith('_'):
@@ -98,6 +101,7 @@ def defineAttrs(*names):
         setattr(HtmlAttrs, name, f)
 
 def A():
+    '''Helper function to build attribute lists'''
     return HtmlAttrs()
 
 defineAttrs('class_', 'id', 'style', 'href', 'type', 'onclick', 'name', 'border', 'cellpadding', 'cellspacing')

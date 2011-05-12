@@ -18,6 +18,7 @@ Created on Apr 7, 2011
 
 import os.path
 import logging
+from lxml import etree, objectify
 
 log = logging.getLogger("m4e.patches")
 
@@ -66,8 +67,8 @@ class PatchDependency(object):
     
     def __eq__(self, other):
         return ((self.groupId, self.artifactId, self.version) ==
-                (other.groupId, other.artifactId, other.version)) 
-
+                (other.groupId, other.artifactId, other.version))
+    
 def dependencyFromString(s):
     parts = s.split(':')
     if len(parts) < 3:
@@ -102,7 +103,9 @@ class ReplaceDependency(object):
         return 'ReplaceDependency(%s -> %s)' % (self.pattern, self.replacement)
 
 class DependencyPatcher(object):
-    def __init__(self, replacements):
+    def __init__(self, defaultProfile, profile, replacements):
+        self.defaultProfileName = defaultProfile
+        self.profileName = profile
         self.replacements = replacements
         
         self.depMap = {}
@@ -111,6 +114,11 @@ class DependencyPatcher(object):
             self.depMap[key] = r
 
     def run(self, pom):
+        defaultProfile = pom.profile(self.defaultProfileName)
+        defaultProfile.activeByDefault( True )
+        
+        profile = pom.profile(self.profileName)
+        
         for dependency in pom.dependencies():
             key = dependency.key()
             
@@ -120,24 +128,41 @@ class DependencyPatcher(object):
             
             log.debug('Found %s in %s' % (key, pom.pomFile))
             
-            self.replaceDependency(dependency, r.replacement)
+            self.replaceDependency(defaultProfile, profile, dependency, r.replacement)
 
     def __repr__(self):
         return 'DependencyPatcher(%d)' % len(self.replacements)
         
-    def replaceDependency(self, dependency, replacement):
-        dependency.groupId = replacement.groupId
-        dependency.artifactId = replacement.artifactId
-        dependency.version = replacement.version
-        if replacement.optional is not None:
-            dependency.optional = replacement.optional
-        if replacement.scope is not None:
-            dependency.scope = replacement.scope
+    def replaceDependency(self, defaultProfile, profile, dependency, replacement):
+        dependency.remove()
+        
+        defaultProfile.addDependency(dependency)
+        profile.addDependency(createDependency(replacement))
+
+def createDependency(template):
+    d = objectify.Element('dependency')
+    
+    for field in ('groupId', 'artifactId', 'version', 'optional', 'scope'):
+        value = getattr(template, field)
+        if value is None:
+            continue
+        
+        if type(value) == type(True):
+            if not value:
+                continue
+            
+            value = 'true' if value else 'false'
+        
+        etree.SubElement(d, field)._setText(value)
+    
+    return d
 
 class PatchLoader(object):
     def __init__(self, path):
         self.path = path
         self.patches = []
+        self.profile = None
+        self.defaultProfile = None
     
     def addRemoveNonOptional(self):
         self.patches.append(RemoveNonOptional())
@@ -163,15 +188,21 @@ class PatchLoader(object):
         
         def replace(*args):
             replacements.append(ReplaceDependency(*args))
+        def profile(name):
+            self.profile = name
+        def defaultProfile(name):
+            self.defaultProfile = name
         
         globals = dict(
             replace=replace,
+            profile=profile,
+            defaultProfile=defaultProfile,
         )
         locals = {}
         execfile(fileName, globals, locals)
         
         if replacements:
-            patch.patches.append(DependencyPatcher(replacements))
+            patch.patches.append(DependencyPatcher(self.defaultProfile, self.profile, replacements))
         
 class PatchTool(object):
     def __init__(self, patches):

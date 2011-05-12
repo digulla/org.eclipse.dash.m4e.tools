@@ -16,12 +16,8 @@ Created on Apr 7, 2011
 @author: Aaron Digulla <digulla@hepe.com>
 '''
 
-import os
 import os.path
-import types
-from lxml import etree
-# TODO Evaluate objectify
-#from lxml import objectify
+from lxml import etree, objectify
 
 POM_NS = 'http://maven.apache.org/POM/4.0.0'
 POM_NS_PREFIX = '{%s}' % POM_NS
@@ -58,38 +54,16 @@ def xmlPath(element):
     
     return ''.join(path)
 
-class PomElement(object):
-    def __init__(self, tree, element):
-        self.tree = tree
-        self.xml_element = element
-    
-    def __getattr__(self, name):
-        expr = etree.ETXPath('{%s}%s' % (POM_NS, name))
-        #print expr
-        result = expr(self.xml_element)
-        #print '%s[%s] = %s' % (self, name, result)
-
-        # Wrap the XML elements        
-        result = [PomElement(self.tree, x) for x in result]
-        
-        # Special case for single or no children 
-        if len(result) == 0:
-            result = None
-        elif len(result) == 1:
-            result = result[0]
-        
-        return result
-    
-    def __repr__(self):
-        return xmlPath(self.xml_element)
+#objectify.Element.__repr__ = lambda self: xmlPath(self)
 
 def removeElement(element):
     parent = element.getparent()
-    index = parent.index(element)
     
     previous = element.getprevious()
-    previous.tail = element.tail
-    del parent[index]
+    if previous is not None:
+        previous.tail = element.tail
+    
+    parent.remove(element)
 
 def createElementAfter(previous, tag):
     parent = previous.getparent()
@@ -99,6 +73,28 @@ def createElementAfter(previous, tag):
     element.tail = previous.tail
     previous.tail = parent.text
     parent.insert(index, element)
+
+def addFields(cls, *fields):
+    for field in fields:
+        def getter(self, field=field):
+            return text(self._pomElement, field)
+        
+        def setter(self, value, field=field):
+            elem = getattr(self._pomElement, field)
+            elem._setText(value)
+        
+        setattr(cls, 'get_%s' + field, getter)
+        setattr(cls, 'set_%s' + field, setter)
+        setattr(cls, field, property(getter,setter))
+
+def text(elem, child=None):
+    if elem is None:
+        return None
+    
+    if child:
+        elem = getattr(elem, child)
+    
+    return None if elem is None else elem.text
 
 class Dependency(object):
     def __init__(self, pomElement):
@@ -114,36 +110,15 @@ class Dependency(object):
         return ((self.groupId, self.artifactId, self.version) ==
                 (other.groupId, other.artifactId, other.version))
     
-    def get_groupId(self):
-        return text(self._pomElement.groupId)
-    
-    def set_groupId(self, groupId):
-        self._pomElement.groupId.xml_element.text = groupId
-
-    groupId = property(get_groupId, set_groupId)
-
-    def get_artifactId(self):
-        return text(self._pomElement.artifactId)
-    
-    def set_artifactId(self, artifactId):
-        self._pomElement.artifactId.xml_element.text = artifactId
-
-    artifactId = property(get_artifactId, set_artifactId)
-
-    def get_version(self):
-        return text(self._pomElement.version)
-    
-    def set_version(self, version):
-        self._pomElement.version.xml_element.text = version
-
-    version = property(get_version, set_version)
+    def remove(self):
+        removeElement(self._pomElement)
     
     def get_optional(self):
-        elem = self._pomElement.optional
+        elem = getattr(self._pomElement, 'optional')
         if elem is None:
             return False
         
-        return elem.xml_element.text == 'true'
+        return elem.text == 'true'
 
     def set_optional(self, value):
         elem = self._pomElement.optional
@@ -152,56 +127,123 @@ class Dependency(object):
                 previous = self._pomElement.version
                 createElementAfter(previous, 'optional')
             
-            self._pomElement.optional.xml_element.text = 'true'
+            self._pomElement.optional.text = 'true'
         else:
             if elem is not None:
-                removeElement(elem.xml_element)
+                removeElement(elem)
         
     optional = property(get_optional, set_optional)
 
     def get_scope(self):
-        elem = text(self._pomElement.scope)
+        return text(self._pomElement, 'scope')
 
     def set_scope(self, value):
         elem = self._pomElement.scope
         if value:
             if elem is None:
                 previous = self._pomElement.version
-                createElementAfter(previous.xml_element, 'scope')
+                createElementAfter(previous, 'scope')
             
-            self._pomElement.scope.xml_element.text = value
+            self._pomElement.scope.text = value
         else:
             if elem is not None:
-                removeElement(elem.xml_element)
+                removeElement(elem)
         
     scope = property(get_scope, set_scope)
 
-def text(elem):
-    return None if elem is None else elem.xml_element.text
+addFields(Dependency, 'groupId', 'artifactId', 'version')
+
+class Profile(object):
+    def __init__(self, pomElement):
+        self._pomElement = pomElement
+    
+    def __repr__(self):
+        return 'profile<%s>' % (self.id,)
+    
+    def key(self):
+        return self.id
+    
+    def __eq__(self, other):
+        return self.id == other.id
+    
+    def activeByDefault(self, bool):
+        activation = getOrCreate(self._pomElement, 'activation')
+        activeByDefault = getOrCreate(activation, 'activeByDefault')
+        activeByDefault._setText( 'true' if bool else 'false' )
+
+    def dependencies(self):
+        '''Get a list of dependencies of this POM'''
+        deps = self._pomElement.dependencies
+        
+        result = getattr(deps, 'dependency')
+        if result is None:
+            return []
+        
+        return [Dependency(d) for d in result]
+
+    def addDependency(self, d):
+        if isinstance(d, Dependency):
+            d = d._pomElement
+        
+        objectify.deannotate(d)
+        etree.cleanup_namespaces(d)
+
+        self._pomElement.dependencies.append(d)
+
+addFields(Profile, 'id')
+
+def createNewProfile(profiles, profileId):
+    xml = etree.SubElement(profiles, 'profile')
+    etree.SubElement(xml, 'id')
+    
+    profile = Profile(xml)
+    profile.id = profileId
+    profile.activeByDefault(False)
+
+    etree.SubElement(xml, 'dependencies')
+    
+    return profile
+
+def getOrCreate(elem, childName):
+    child = getattr(elem, POM_NS_PREFIX+childName, None)
+    if child is None:
+        #print 'Create child',childName,'in',elem
+        #print elem.getchildren()
+        child = etree.SubElement(elem, POM_NS_PREFIX+childName)
+    return child
 
 class Pom(object):
     def __init__(self, pomFile):
         self.pomFile = pomFile
         
         try:
-            parser = etree.XMLParser(resolve_entities=False, recover=True)
-            self.xml = etree.parse(self.pomFile, parser=parser)
+            parser = objectify.makeparser(resolve_entities=False, recover=True)
+            self.xml = objectify.parse(self.pomFile, parser=parser)
         except:
             print 'Error parsing %s' % self.pomFile
             raise
         
-        self.project = PomElement(self.xml, self.xml.getroot())
+        self.project = self.xml.getroot()
+        #print dir(self.project)
+        #print(isinstance(self.project, objectify.ObjectifiedElement))
+        assert self.project.tag == POM_NS_PREFIX+'project', 'Expected <project> as root element but was %s' % (self.project.tag,)
+        
+        #print self.project.groupId
     
     def key(self):
+        '''groupId:artifactId:version'''
         return '%s:%s:%s' % (text(self.project.groupId), text(self.project.artifactId), text(self.project.version))
     
     def artifactIdVersion(self):
+        '''artifactId:version (without groupId)'''
         return '%s:%s' % (text(self.project.artifactId), text(self.project.version))
     
     def shortKey(self):
+        '''groupId:artifactId (without version)'''
         return '%s:%s' % (text(self.project.groupId), text(self.project.artifactId))
     
     def files(self):
+        '''Get a list of file types that are available for this artifact. This is usually [jar, pom] or [jar, pom, sources].'''
         path = os.path.dirname(self.pomFile)
         l = os.listdir(path)
         
@@ -223,23 +265,34 @@ class Pom(object):
         return files
     
     def dependencies(self):
-        deps = self.project.dependencies
+        '''Get a list of dependencies of this POM'''
+        deps = getattr(self.project, 'dependencies', None)
         if deps is None:
             return []
         
-        result = deps.dependency
+        result = getattr(deps, 'dependency')
         if result is None:
             return []
         
-        if type(result) != types.ListType:
-            result = [result]
-        
         return [Dependency(d) for d in result]
+
+    def profile(self, profileId):
+        profiles = getOrCreate(self.project, 'profiles')
+        
+        l = getattr(profiles, 'profile', [])
+        for profile in l:
+            if profile.id.text == profileId:
+                return Profile(profile)
+        
+        return createNewProfile(profiles, profileId)
 
     def __repr__(self):
         return etree.tostring(self.xml, pretty_print=True)
 
     def save(self, fileName=None):
+        '''Save this POM to a file
+        
+        Of the file already exists, a backup is created.'''
         if not fileName:
             fileName = self.pomFile
         
@@ -248,6 +301,13 @@ class Pom(object):
         
         if os.path.exists(tmp):
             os.remove(tmp)
+        
+        objectify.deannotate(self.xml)
+        etree.cleanup_namespaces(self.xml)
+        
+        deps = getattr(self.project, 'dependencies', None)
+        if deps is not None and len(deps) == 0:
+            self.project.dependencies.remove()
         
         self.xml.write(tmp, encoding="UTF-8", pretty_print=True)
         

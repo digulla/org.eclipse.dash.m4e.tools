@@ -21,6 +21,9 @@ import sys
 import os.path
 
 def substringBefore( s, pattern ):
+    '''Get the substring before a pattern.
+    
+    Returns None if the pattern can't be found.'''
     pos = s.find( pattern )
     if pos == -1:
         return None
@@ -33,6 +36,7 @@ def userNeedsHelp(argv):
     return not argv or set(argv) & helpOptions
 
 def configLogger(fileName):
+    '''Configure the logger.'''
     #logging.basicConfig(level=logging.INFO, format='%(message)s')
     
     path = os.path.abspath(fileName)
@@ -64,6 +68,7 @@ def configLogger(fileName):
     root.addHandler(handler)
 
 def mustBeDirectory(path):
+    '''Raise an exception if path is not a directory.'''
     if not os.path.exists(path):
         raise RuntimeError("%s doesn't exist" % path)
     
