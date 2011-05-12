@@ -27,7 +27,7 @@ import StringIO
 sys.path.append('../src')
 
 from m4e.pom import Pom, xmlPath
-from m4e.patches import RemoveNonOptional, PatchLoader, PatchTool, dependencyFromString, ReplaceDependency, DependencyPatcher
+from m4e.patches import *
 
 def test_PomReader():
     reader = Pom('org.eclipse.birt.core-2.6.2.pom')
@@ -93,7 +93,7 @@ def test_loadPatches():
     tool = PatchLoader('../patches')
     tool.run()
     
-    eq_('[Patches(../patches/birt-2.6.2.patches)]', repr(tool.patches))
+    eq_('[PatchSet(../patches/birt-2.6.2.patches)]', repr(tool.patches))
 
     x = tool.patches[0].patches
     eq_('[DependencyPatcher(2)]', repr(x))
@@ -124,7 +124,7 @@ def test_ApplyPatches():
     loader.addRemoveNonOptional()
     loader.run()
     
-    eq_('[RemoveNonOptional(), Patches(../patches/birt-2.6.2.patches)]', repr(loader.patches))
+    eq_('[RemoveNonOptional(), PatchSet(../patches/birt-2.6.2.patches)]', repr(loader.patches))
     
     pom = Pom('org.eclipse.birt.core-2.6.2.pom')
     
@@ -190,7 +190,7 @@ def test_patchScope():
     pom = Pom(StringIO.StringIO(POM_WITH_JAVASCRIPT_DEPENDENCY))
     
     op = ReplaceDependency('org.mozilla.javascript:org.mozilla.javascript:[1.6.0,2.0.0)', 'rhino:js:1.7R2:scope=test')
-    tool = DependencyPatcher('m4e.orbit', 'm4e.maven-central', [op])
+    tool = DependencyPatcher('m4e.orbit', 'm4e.maven-central', [op], [])
     
     tool.run(pom)
     
@@ -201,7 +201,7 @@ def test_patchScope_2():
     pom = Pom(StringIO.StringIO(POM_WITH_JAVASCRIPT_DEPENDENCY))
     
     op = ReplaceDependency('org.mozilla.javascript:org.mozilla.javascript:[1.6.0,2.0.0)', 'rhino:js:1.7R2:scope=test:optional=true')
-    tool = DependencyPatcher('m4e.orbit', 'm4e.maven-central', [op])
+    tool = DependencyPatcher('m4e.orbit', 'm4e.maven-central', [op], [])
     
     tool.run(pom)
     
@@ -212,12 +212,26 @@ def test_patchScope_3():
     pom = Pom(StringIO.StringIO(POM_WITH_JAVASCRIPT_DEPENDENCY))
     
     op = ReplaceDependency('org.mozilla.javascript:org.mozilla.javascript:[1.6.0,2.0.0)', 'rhino:js:1.7R2:scope=test:optional=false')
-    tool = DependencyPatcher('m4e.orbit', 'm4e.maven-central', [op])
+    tool = DependencyPatcher('m4e.orbit', 'm4e.maven-central', [op], [])
     
     tool.run(pom)
     
     expected = POM_WITH_RHINO_DEPENDENCY.replace('${opt}', '          <scope>test</scope>')
     compareStrings(expected, repr(pom))
+
+def test_patchDelete():
+    pom = Pom(StringIO.StringIO(POM_WITH_JAVASCRIPT_DEPENDENCY))
+    
+    op = DeleteDependency('org.mozilla.javascript:org.mozilla.javascript:[1.6.0,2.0.0)')
+    tool = DependencyPatcher(None, None, [], [op])
+    
+    tool.run(pom)
+
+    print repr(pom)    
+    compareStrings('''<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <dependencies/>
+</project>
+''', repr(pom))
 
 def test_noDependencies():
     xml = '<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"></project>'

@@ -26,6 +26,7 @@ NAMESPACES = {
 }
 
 def xmlPath(element):
+    '''Return a simple, unambiguous path for an XML element'''
     path = []
     
     while True:
@@ -57,6 +58,7 @@ def xmlPath(element):
 #objectify.Element.__repr__ = lambda self: xmlPath(self)
 
 def removeElement(element):
+    '''Remove an element from a document keeping the formatting intact'''
     parent = element.getparent()
     
     previous = element.getprevious()
@@ -65,9 +67,14 @@ def removeElement(element):
     
     parent.remove(element)
 
-def createElementAfter(previous, tag):
-    parent = previous.getparent()
-    index = parent.index(previous) + 1
+def createElementAfter(parent, previousName, tag):
+    '''Add an element after a sibling or append it if the sibling doesn't exist'''
+    previous = getattr(parent, previousName, None)
+    if previous is None:
+        index = len(parent)
+        previous = parent[index-1]
+    else:
+        index = parent.index(previous) + 1
     
     element = etree.Element('%s%s' % (POM_NS_PREFIX, tag))
     element.tail = previous.tail
@@ -75,6 +82,7 @@ def createElementAfter(previous, tag):
     parent.insert(index, element)
 
 def addFields(cls, *fields):
+    '''Add property access for text elements in a DOM to a class'''
     for field in fields:
         def getter(self, field=field):
             return text(self._pomElement, field)
@@ -88,15 +96,34 @@ def addFields(cls, *fields):
         setattr(cls, field, property(getter,setter))
 
 def text(elem, child=None):
+    '''Get the text of an XML element or None if the element or the child doesn't exist'''
     if elem is None:
         return None
     
     if child:
-        elem = getattr(elem, child)
+        elem = getattr(elem, child, None)
     
     return None if elem is None else elem.text
 
+def setOptionalText(parent, elemName, value, previousName):
+    '''Create a text element if it doesn't exist, 
+    change the text of an existing text element or
+    delete a text element (if value is None).
+    
+    If the text element needs to be created, it will be inserted
+    after the sibling previousName'''
+    child = getattr(parent, elemName, None)
+    if value:
+        if child is None:
+            child = createElementAfter(parent, previousName, elemName)
+        
+        child.text = unicode(value)
+    else:
+        if child is not None:
+            removeElement(child)
+
 class Dependency(object):
+    '''This class maps the standard fields of a Maven 2 dependency between Python and XML'''
     def __init__(self, pomElement):
         self._pomElement = pomElement
     
@@ -114,23 +141,11 @@ class Dependency(object):
         removeElement(self._pomElement)
     
     def get_optional(self):
-        elem = getattr(self._pomElement, 'optional')
-        if elem is None:
-            return False
-        
-        return elem.text == 'true'
+        return text(self._pomElement, 'optional') == 'true'
 
     def set_optional(self, value):
-        elem = self._pomElement.optional
-        if value:
-            if elem is None:
-                previous = self._pomElement.version
-                createElementAfter(previous, 'optional')
-            
-            self._pomElement.optional.text = 'true'
-        else:
-            if elem is not None:
-                removeElement(elem)
+        value = 'true' if value else None
+        setOptionalText(self._pomElement, 'optional', value, 'version')
         
     optional = property(get_optional, set_optional)
 
@@ -138,22 +153,15 @@ class Dependency(object):
         return text(self._pomElement, 'scope')
 
     def set_scope(self, value):
-        elem = self._pomElement.scope
-        if value:
-            if elem is None:
-                previous = self._pomElement.version
-                createElementAfter(previous, 'scope')
-            
-            self._pomElement.scope.text = value
-        else:
-            if elem is not None:
-                removeElement(elem)
+        setOptionalText(self._pomElement, 'scope', value, 'version')
         
     scope = property(get_scope, set_scope)
 
+# Add the standard cases
 addFields(Dependency, 'groupId', 'artifactId', 'version')
 
 class Profile(object):
+    '''This class offers support for Maven 2 profile elements'''
     def __init__(self, pomElement):
         self._pomElement = pomElement
     
@@ -192,20 +200,10 @@ class Profile(object):
 
 addFields(Profile, 'id')
 
-def createNewProfile(profiles, profileId):
-    xml = etree.SubElement(profiles, 'profile')
-    etree.SubElement(xml, 'id')
-    
-    profile = Profile(xml)
-    profile.id = profileId
-    profile.activeByDefault(False)
-
-    etree.SubElement(xml, 'dependencies')
-    
-    return profile
-
 def getOrCreate(elem, childName):
+    '''Get a child node by name. Create the child node if it doesn't exist.'''
     child = getattr(elem, POM_NS_PREFIX+childName, None)
+    
     if child is None:
         #print 'Create child',childName,'in',elem
         #print elem.getchildren()
@@ -213,10 +211,12 @@ def getOrCreate(elem, childName):
     return child
 
 class Pom(object):
+    '''Helper class to work with POM files'''
     def __init__(self, pomFile):
         self.pomFile = pomFile
         
         try:
+            # This is necessary to parse POM files with HTML entities
             parser = objectify.makeparser(resolve_entities=False, recover=True)
             self.xml = objectify.parse(self.pomFile, parser=parser)
         except:
@@ -270,13 +270,14 @@ class Pom(object):
         if deps is None:
             return []
         
-        result = getattr(deps, 'dependency')
+        result = getattr(deps, 'dependency', None)
         if result is None:
             return []
         
         return [Dependency(d) for d in result]
 
     def profile(self, profileId):
+        '''Get a Profile instance by ID'''
         profiles = getOrCreate(self.project, 'profiles')
         
         l = getattr(profiles, 'profile', [])
@@ -284,7 +285,19 @@ class Pom(object):
             if profile.id.text == profileId:
                 return Profile(profile)
         
-        return createNewProfile(profiles, profileId)
+        return self.createNewProfile(profiles, profileId)
+
+    def createNewProfile(self, profiles, profileId):
+        xml = etree.SubElement(profiles, POM_NS_PREFIX+'profile')
+        etree.SubElement(xml, POM_NS_PREFIX+'id')
+        
+        profile = Profile(xml)
+        profile.id = profileId
+        profile.activeByDefault(False)
+    
+        etree.SubElement(xml, POM_NS_PREFIX+'dependencies')
+        
+        return profile
 
     def __repr__(self):
         return etree.tostring(self.xml, pretty_print=True)

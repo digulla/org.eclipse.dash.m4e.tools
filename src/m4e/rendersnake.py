@@ -21,6 +21,7 @@ import cgi
 __all__ = [ 'HtmlCanvas', 'A' ]
 
 class HtmlCanvas(object):
+    '''A renderer for HTML'''
     def __init__(self, out):
         self.out = out
         self.stack = []
@@ -105,16 +106,3 @@ def A():
     return HtmlAttrs()
 
 defineAttrs('class_', 'id', 'style', 'href', 'type', 'onclick', 'name', 'border', 'cellpadding', 'cellspacing')
-
-if __name__ == '__main__':
-    import sys
-    
-    html = HtmlCanvas(sys.stdout)
-    html.html().head().write('\n') \
-    .title().write('Demo')._title().write('\n') \
-    ._head().write('\n') \
-    .body().write('\n') \
-    .div(A().id('xxx').class_('yyy').onclick("a='x'; b=\"b\"")) \
-    .write('<hello&>') \
-    ._div() \
-    ._body()._html().write('\n')
