@@ -11,6 +11,9 @@
 # *******************************************************************************/
 """Tool to create POM files with a dependencyManagement element.
 
+See http://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Importing_Dependencies
+for how to use this POM.
+
 Created on May 12, 2011
 
 @author: Aaron Digulla <digulla@hepe.com>

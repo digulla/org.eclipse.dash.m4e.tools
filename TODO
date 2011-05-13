@@ -1,9 +1,6 @@
 TODO
 ====
 
-- Create a POM with a dependencyManagement element that contains all the
-  versions of all POMs in this repo, suitable for using it to
-  import dependencies (see http://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Importing_Dependencies) 
 
 DONE
 ====
@@ -12,3 +9,6 @@ DONE
   can decide which one to use
 * Patches to delete dependencies
 * Analysis tool
+* Create a POM with a dependencyManagement element that contains all the
+  versions of all POMs in this repo, suitable for using it to
+  import dependencies (see http://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Importing_Dependencies) 

@@ -40,3 +40,5 @@ import in your project to replace all version ranges with the specific
 versions supplied by this repository. The second argument is the artifact ID
 of the POM which will be created.
 
+See http://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html#Importing_Dependencies
+for how to use this POM in your projects.
