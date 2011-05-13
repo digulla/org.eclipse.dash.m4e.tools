@@ -17,6 +17,7 @@ Created on Apr 7, 2011
 '''
 
 import os.path
+import StringIO
 from lxml import etree, objectify
 
 POM_NS = 'http://maven.apache.org/POM/4.0.0'
@@ -69,6 +70,9 @@ def removeElement(element):
 
 def createElementAfter(parent, previousName, tag):
     '''Add an element after a sibling or append it if the sibling doesn't exist'''
+    if previousName is None:
+        return etree.SubElement(parent, '%s%s' % (POM_NS_PREFIX, tag))
+    
     previous = getattr(parent, previousName, None)
     if previous is None:
         index = len(parent)
@@ -85,10 +89,10 @@ def addFields(cls, *fields):
     '''Add property access for text elements in a DOM to a class'''
     for field in fields:
         def getter(self, field=field):
-            return text(self._pomElement, field)
+            return text(self.xml(), field)
         
         def setter(self, value, field=field):
-            elem = getattr(self._pomElement, field)
+            elem = getattr(self.xml(), field)
             elem._setText(value)
         
         setattr(cls, 'get_%s' + field, getter)
@@ -105,7 +109,7 @@ def text(elem, child=None):
     
     return None if elem is None else elem.text
 
-def setOptionalText(parent, elemName, value, previousName):
+def setOptionalText(parent, elemName, value, previousName=None):
     '''Create a text element if it doesn't exist, 
     change the text of an existing text element or
     delete a text element (if value is None).
@@ -117,7 +121,10 @@ def setOptionalText(parent, elemName, value, previousName):
         if child is None:
             child = createElementAfter(parent, previousName, elemName)
         
-        child.text = unicode(value)
+        if child is None:
+            raise RuntimeError("Can't create child %s of %s" % (elemName, xmlPath(parent)))
+        
+        child._setText(unicode(value))
     else:
         if child is not None:
             removeElement(child)
@@ -136,6 +143,9 @@ class Dependency(object):
     def __eq__(self, other):
         return ((self.groupId, self.artifactId, self.version) ==
                 (other.groupId, other.artifactId, other.version))
+    
+    def xml(self):
+        return self._pomElement
     
     def remove(self):
         removeElement(self._pomElement)
@@ -174,6 +184,9 @@ class Profile(object):
     def __eq__(self, other):
         return self.id == other.id
     
+    def xml(self):
+        return self._pomElement
+    
     def activeByDefault(self, bool):
         activation = getOrCreate(self._pomElement, 'activation')
         activeByDefault = getOrCreate(activation, 'activeByDefault')
@@ -181,7 +194,9 @@ class Profile(object):
 
     def dependencies(self):
         '''Get a list of dependencies of this POM'''
-        deps = self._pomElement.dependencies
+        deps = getattr(self._pomElement, 'dependencies', None)
+        if deps is None:
+            return []
         
         result = getattr(deps, 'dependency')
         if result is None:
@@ -212,9 +227,31 @@ def getOrCreate(elem, childName):
 
 class Pom(object):
     '''Helper class to work with POM files'''
-    def __init__(self, pomFile):
+    def __init__(self, pomFile=None):
         self.pomFile = pomFile
         
+        if self.pomFile:
+            self.load()
+    
+            self.project = self.xml.getroot()
+            #print type(self.xml)
+            #print dir(self.project)
+            #print(isinstance(self.project, objectify.ObjectifiedElement))
+            assert self.project.tag == POM_NS_PREFIX+'project', 'Expected <project> as root element but was %s' % (self.project.tag,)
+        
+            #print self.project.groupId
+    
+    def createNew(self):
+        self.xml = objectify.parse(StringIO.StringIO('''<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId/>
+  <artifactId/>
+  <version/>
+</project>
+'''))
+        self.project = self.xml.getroot()
+    
+    def load(self):
         try:
             # This is necessary to parse POM files with HTML entities
             parser = objectify.makeparser(resolve_entities=False, recover=True)
@@ -223,13 +260,6 @@ class Pom(object):
             print 'Error parsing %s' % self.pomFile
             raise
         
-        self.project = self.xml.getroot()
-        #print dir(self.project)
-        #print(isinstance(self.project, objectify.ObjectifiedElement))
-        assert self.project.tag == POM_NS_PREFIX+'project', 'Expected <project> as root element but was %s' % (self.project.tag,)
-        
-        #print self.project.groupId
-    
     def key(self):
         '''groupId:artifactId:version'''
         return '%s:%s:%s' % (text(self.project.groupId), text(self.project.artifactId), text(self.project.version))
@@ -287,6 +317,13 @@ class Pom(object):
         
         return self.createNewProfile(profiles, profileId)
 
+    def profiles(self):
+        profiles = getattr(self.project, 'profiles', None)
+        if profiles is None:
+            return []
+        
+        return [Profile(p) for p in profiles]
+
     def createNewProfile(self, profiles, profileId):
         xml = etree.SubElement(profiles, POM_NS_PREFIX+'profile')
         etree.SubElement(xml, POM_NS_PREFIX+'id')
@@ -312,6 +349,10 @@ class Pom(object):
         tmp = '%s.tmp' % fileName
         bak = '%s.bak' % fileName
         
+        dir = os.path.dirname(tmp)
+        if not os.path.exists(dir):
+            os.makedirs(dir)
+        
         if os.path.exists(tmp):
             os.remove(tmp)
         
@@ -329,3 +370,19 @@ class Pom(object):
             
         os.rename(tmp, fileName)
     
+def createPom(repoDir, groupId, artifactId, version):
+    path = os.path.join(*groupId.split('.'))
+    path = os.path.join(repoDir, path, artifactId, version)
+    
+    fileName = '%s-%s.pom' % (artifactId, version)
+    path = os.path.join(path, fileName)
+    
+    pom = Pom()
+    pom.createNew()
+    pom.pomFile = path
+    
+    pom.project.groupId._setText(groupId)
+    pom.project.artifactId._setText(artifactId)
+    pom.project.version._setText(version)
+    
+    return pom
