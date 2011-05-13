@@ -28,8 +28,6 @@ VERSION = '0.1 (05.05.2011)'
 
 log = logging.getLogger('m4e.analyze')
 
-helpOptions = frozenset(('--help', '-h', '-help', '-?', 'help'))
-
 class Problem(object):
     htmlTitle = 'Generic Problems'
     

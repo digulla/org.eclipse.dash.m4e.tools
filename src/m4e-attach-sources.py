@@ -26,7 +26,7 @@ import os
 import sys
 import time
 import logging
-from m4e.common import configLogger
+from m4e.common import configLogger, userNeedsHelp
 
 VERSION = '1.1 (07.04.2011)'
 
@@ -125,10 +125,8 @@ class AttachSources(object):
         
         self.count += 1
 
-helpOptions = frozenset(('--help', '-h', '-help', '-?', 'help'))
-
 def main(name, argv):
-    if not argv or set(argv) & helpOptions:
+    if userNeedsHelp(argv):
         print('%s %s' % (name, VERSION))
         print('Usage: %s <m2repo>')
         print('')

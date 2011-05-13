@@ -22,7 +22,7 @@ import sys
 import os.path
 import shutil
 import logging
-from m4e.common import configLogger
+from m4e.common import configLogger, userNeedsHelp
 
 workDir = os.path.abspath('../tmp')
 
@@ -398,15 +398,13 @@ def deleteMavenFiles(folder):
         elif name in mavenFiles:
             os.remove(path)
 
-helpOptions = frozenset(('--help', '-h', '-help', '-?', 'help'))
-
 def main(name, argv):
     logFile = os.path.join(workDir, 'm4e-import.log')
     configLogger(logFile)
     
     log.info('%s %s' % (name, VERSION))
     log.debug('workDir=%s' % os.path.abspath(workDir))
-    if not argv or set(argv) & helpOptions:
+    if userNeedsHelp(argv):
         print('Usage: %s <archives...>')
         print('')
         print('Import the set of archives into Maven 2 repositories in')

@@ -21,6 +21,7 @@ import os
 import sys
 import filecmp
 import time
+from m4e.common import userNeedsHelp
 
 VERSION = '0.5 (19.03.2011)'
 
@@ -51,10 +52,8 @@ def merge(source, target):
             else:
                 os.link(srcPath, targetPath)
 
-helpOptions = frozenset(('--help', '-h', '-help', '-?', 'help'))
-
 def main(name, argv):
-    if not argv or set(argv) & helpOptions:
+    if userNeedsHelp(argv):
         print('%s %s' % (name, VERSION))
         print('Usage: %s <m2repos...> <result>')
         print('')
