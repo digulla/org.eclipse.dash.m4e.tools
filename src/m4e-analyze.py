@@ -24,7 +24,7 @@ from m4e.patches import PatchLoader, PatchTool
 from m4e.pom import Pom
 from m4e.rendersnake import *
 
-VERSION = '0.1 (05.05.2011)'
+VERSION = '0.9 (13.05.2011)'
 
 log = logging.getLogger('m4e.analyze')
 

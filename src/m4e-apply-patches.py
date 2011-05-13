@@ -26,7 +26,7 @@ from m4e.common import configLogger, mustBeDirectory, userNeedsHelp
 from m4e.patches import PatchLoader, PatchTool
 from m4e.pom import Pom
 
-VERSION = '0.1 (07.04.2011)'
+VERSION = '0.9 (07.04.2011)'
 
 log = logging.getLogger('m4e.apply_patches')
 
