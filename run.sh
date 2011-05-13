@@ -24,6 +24,6 @@ eval ./m4e-merge.py $folders ../tmp/m2repo || exit 1
 ./m4e-attach-sources.py ../tmp/m2repo || exit 1
 ./m4e-apply-patches.py ../patches ../tmp/m2repo || exit 1
 ./m4e-analyze.py ../tmp/m2repo || exit 1
-./m4e-dm.py ../tmp/m2repo org.eclipse.m4e:m4e-dependencyManagement:3.6.2 || exit 1
+./m4e-dm.py ../tmp/m2repo org.eclipse.dash:dependency-management:3.6.2 || exit 1
 
 exit 0

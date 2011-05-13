@@ -33,7 +33,7 @@ as moving Orbit dependencies into a special profile.
 To analyze the new Maven 2 repo. This gives you some information about odd
 version numbers, missing dependencies, etc.
 
-> ./m4e-dm.py ../tmp/m2repo org.eclipse.m4e:m4e-dependencyManagement:3.6.2
+> ./m4e-dm.py ../tmp/m2repo org.eclipse.dash:dependency-management:3.6.2
 
 finally creates a single huge POM with a dependencyManagement that you can
 import in your project to replace all version ranges with the specific
