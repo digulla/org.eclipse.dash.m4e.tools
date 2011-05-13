@@ -1,6 +1,10 @@
 TODO
 ====
 
+- The merge tool reports a lot of JARs that are signed twice during the
+  build. Find a way to get rid of these messages.
+- Add a tool to convert the M2 repo in tmp/ into something suitable for
+  Nexus
 
 DONE
 ====
