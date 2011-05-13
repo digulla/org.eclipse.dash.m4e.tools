@@ -237,7 +237,7 @@ class Pom(object):
             #print type(self.xml)
             #print dir(self.project)
             #print(isinstance(self.project, objectify.ObjectifiedElement))
-            assert self.project.tag == POM_NS_PREFIX+'project', 'Expected <project> as root element but was %s' % (self.project.tag,)
+            assert self.project.tag == POM_NS_PREFIX+'project', '%s: Expected <project> as root element but was %s' % (self.pomFile, self.project.tag,)
         
             #print self.project.groupId
     
