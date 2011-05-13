@@ -12,10 +12,31 @@ A typical session looks like this:
 
 > ./m4e-import.py ~/eclipse-3.6
 > ./m4e-import.py ~/Downloads/eclipse-platform-SDK-3.6.2-linux-gtk-x86_64.tar.gz
+
+This imports all plug-ins from an existing Eclipse 3.6 install
+
 > ./m4e-merge.py ../tmp/*eclipse*_home/m2repo ../tmp/m2repo
+
+This merges all new Maven 2 repos into a single one
+
 > ./m4e-attach-sources.py ../tmp/m2repo/
 
-This imports all plug-ins from an existing Eclipse 3.6 install, adds the source
-plug-ins from the SDK download, and merges the two new Maven 2 repositories.
+to move the source JARs in the place where Maven 2 expects them
 
-The last step moves the source JARs in the right place.
+> ./m4e-apply-patches.py ../patches ../tmp/m2repo
+
+To apply all patches to the new repo. Patches include simple cleanup as well
+as moving Orbit dependencies into a special profile.
+
+> ./m4e-analyze.py ../tmp/m2repo
+
+To analyze the new Maven 2 repo. This gives you some information about odd
+version numbers, missing dependencies, etc.
+
+> ./m4e-dm.py ../tmp/m2repo org.eclipse.m4e:m4e-dependencyManagement:3.6.2
+
+finally creates a single huge POM with a dependencyManagement that you can
+import in your project to replace all version ranges with the specific
+versions supplied by this repository. The second argument is the artifact ID
+of the POM which will be created.
+
