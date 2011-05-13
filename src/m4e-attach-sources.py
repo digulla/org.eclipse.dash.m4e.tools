@@ -28,7 +28,7 @@ import time
 import logging
 from m4e.common import configLogger, userNeedsHelp
 
-VERSION = '1.1 (07.04.2011)'
+VERSION = '1.2 (13.05.2011)'
 
 log = logging.getLogger('m4e.attach_sources')
 

@@ -23,7 +23,7 @@ import filecmp
 import time
 from m4e.common import userNeedsHelp
 
-VERSION = '0.5 (19.03.2011)'
+VERSION = '0.9 (13.05.2011)'
 
 def merge(source, target):
     names = os.listdir(source)
