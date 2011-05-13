@@ -196,6 +196,7 @@ class ImportTool(object):
         self.clean()
         self.writeSettings()
         
+        log.info('Analysing Eclipse plugins...')
         self.doImport()
 
         log.info('OK')
@@ -326,7 +327,7 @@ def importIntoTmpRepo(path, logFile):
 primingArchive=os.path.join(workDir,'..','data','priming.tar.gz')
 templateRepo=os.path.join(workDir,'priming_home','m2repo')
 
-def loadNecessaryPlugins():
+def loadNecessaryPlugins(logFile):
     '''We want to avoid downloading the Maven plug-ins all the time.
     
     Therefore, we create a template repository which contains the
@@ -338,7 +339,7 @@ def loadNecessaryPlugins():
     log.info('Downloading necessary plug-ins for Maven 3')
     archive = downloadArchive(primingArchive)
     path = unpackArchive(archive)
-    importIntoTmpRepo(path)
+    importIntoTmpRepo(path, logFile)
     
     eclipseDir = os.path.join(templateRepo, 'org', 'eclipse')
     
@@ -413,7 +414,7 @@ def main(name, argv):
     
     downloadMaven3()
     unpackMaven3()
-    loadNecessaryPlugins()
+    loadNecessaryPlugins(logFile)
     
     for archive in argv:
         archive = downloadArchive(archive)
