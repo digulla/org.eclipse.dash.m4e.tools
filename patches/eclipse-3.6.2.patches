@@ -1,0 +1,105 @@
+# /*******************************************************************************
+# * Copyright (c) 07.04.2011 Aaron Digulla.
+# * All rights reserved. This program and the accompanying materials
+# * are made available under the terms of the Eclipse Public License v1.0
+# * which accompanies this distribution, and is available at
+# * http://www.eclipse.org/legal/epl-v10.html
+# *
+# * Contributors:
+# *    Aaron Digulla - initial API and implementation and/or initial documentation
+# *******************************************************************************/
+'''
+Patches for BIRT 2.6.2
+
+Created on Apr 7, 2011
+
+@author: Aaron Digulla <digulla@hepe.com>
+'''
+
+defaultProfile('m4e.orbit')
+profile('m4e.maven-central')
+
+replace('com.jcraft.jsch:com.jcraft.jsch:0.1.41', 'com.jcraft:jsch:0.1.41')
+replace('com.lowagie.text:com.lowagie.text:2.1.7', 'com.lowagie:itext:2.1.7')
+# Not sure about this one
+replace('java_cup.runtime:java_cup.runtime:0.10.0', 'edu.princeton.cup:java-cup:10k')
+replace('javax.activation:javax.activation:1.1.0', 'javax.activation:activation:1.1')
+replace('javax.mail:javax.mail:1.4.0', 'javax.mail:mail:1.4')
+replace('javax.persistence:javax.persistence:2.0.1', 'javax.persistence:persistence-api:1.0')
+replace('javax.servlet.jsp:javax.servlet.jsp:2.0.0', 'javax.servlet:jsp-api:2.0')
+replace('javax.servlet:javax.servlet:2.5.0', 'javax.servlet:servlet-api:2.5')
+# Not sure about this one
+replace('javax.transaction:javax.transaction:1.1.1', 'javax.transaction:jta:1.1')
+replace('javax.wsdl:javax.wsdl:1.5.1', 'wsdl4j:wsdl4j:1.5.1')
+replace('javax.xml.bind:javax.xml.bind:2.2.0', 'javax.xml.bind:jaxb-api:2.2')
+replace('javax.xml.rpc:javax.xml.rpc:1.1.0', 'javax.xml:jaxrpc-api:1.1')
+replace('javax.xml.soap:javax.xml.soap:1.2.0', 'javax.xml:saaj-api:1.2')
+replace('javax.xml.stream:javax.xml.stream:1.0.1', 'javax.xml:jsr173:1.0')
+replace('javax.xml:javax.xml:1.3.4', 'xml-apis:xml-apis:1.3.04')
+# Does not exist on Central
+#replace('lpg.runtime.java:lpg.runtime.java:2.0.17', '')
+#replace('net.sourceforge.lpg:net.sourceforge.lpg.lpgjavaruntime:1.1.0', '')
+replace('org.apache.ant:org.apache.ant:1.7.1', 'org.apache.ant:ant:1.7.1')
+replace('org.apache.axis:org.apache.axis:1.4.0', 'org.apache.axis:axis:1.4')
+replace('org.apache.batik:org.apache.batik.bridge:1.6.0', 'batik:batik-bridge:1.6')
+replace('org.apache.batik:org.apache.batik.css:1.6.0', 'batik:batik-css:1.6')
+replace('org.apache.batik:org.apache.batik.dom:1.6.0', 'batik:batik-dom:1.6')
+replace('org.apache.batik:org.apache.batik.dom.svg:1.6.0', 'batik:batik-svg:1.6')
+replace('org.apache.batik:org.apache.batik.ext.awt:1.6.0', 'batik:batik-awt-util:1.6')
+replace('org.apache.batik:org.apache.batik.parser:1.6.0', 'batik:batik-parser:1.6')
+replace('org.apache.batik:org.apache.batik.pdf:1.6.0', 'batik:batik-rasterizer:1.6')
+replace('org.apache.batik:org.apache.batik.svggen:1.6.0', 'batik:batik-svggen:1.6')
+replace('org.apache.batik:org.apache.batik.transcoder:1.6.0', 'batik:batik-transcoder:1.6')
+replace('org.apache.batik:org.apache.batik.util:1.6.0', 'batik:batik-util:1.6')
+replace('org.apache.batik:org.apache.batik.util.gui:1.6.0', 'batik:batik-gui-util:1.6')
+replace('org.apache.batik:org.apache.batik.xml:1.6.0', 'batik:batik-xml:1.6')
+replace('org.apache.bcel:org.apache.bcel:5.2.0', 'org.apache.bcel:bcel:5.2')
+replace('org.apache.commons:org.apache.commons.codec:1.3.0', 'commons-codec:commons-codec:1.3')
+replace('org.apache.commons.collections:3.2.0', 'commons-collections:commons-collections:3.2')
+replace('org.apache.commons.discovery:0.2.0', 'commons-discovery:commons-discovery:0.2')
+replace('org.apache.commons.el:1.0.0', 'commons-el:commons-el:1.0')
+replace('org.apache.commons.httpclient:3.1.0', 'commons-httpclient:commons-httpclient:3.1')
+replace('org.apache.commons.lang:2.3.0', 'commons-lang:commons-lang:2.3')
+replace('org.apache.commons.logging:1.1.1', 'commons-logging:commons-logging:1.1.1')
+replace('org.apache.commons.net:2.0.0', 'commons-net:commons-net:2.0')
+replace('org.apache.derby:org.apache.derby:10.5.1', 'org.apache.derby:derby:10.5.3.0_1')
+# Does not exist on Central
+#replace('org.apache.derby.core:10.5.1', '')
+replace('org.apache.jasper:org.apache.jasper:5.5.17', 'tomcat:jasper-compiler:5.5.23')
+replace('org.apache.log4j:org.apache.log4j:1.2.15', 'log4j:log4j:1.2.15')
+replace('org.apache.lucene:org.apache.lucene:1.9.1', 'org.apache.lucene » lucene-core:1.9.1')
+replace('org.apache.lucene.analysis:1.9.1', 'org.apache.lucene » lucene-analyzers:1.9.1')
+replace('org.apache.oro:org.apache.oro:2.0.8', 'oro » oro:2.0.8')
+replace('org.apache.velocity:org.apache.velocity:1.5.0', 'velocity » velocity:1.5')
+# What's this???
+replace('org.apache.ws:org.apache.ws.commons.util:1.0.0', '')
+# What's this???
+replace('org.apache.wsil4j:org.apache.wsil4j:1.0.0', '')
+replace('org.apache.xalan:org.apache.xalan:2.7.1', 'xalan » xalan:2.7.1')
+replace('org.apache.xerces:org.apache.xerces:2.9.0', 'xerces » xercesImpl:2.9.0')
+replace('org.apache.xml:org.apache.xml.resolver:1.2.0', 'xml-resolver » xml-resolver:1.2')
+replace('org.apache.xml.serializer:2.7.1', 'xalan » serializer:2.7.1')
+replace('org.apache.xmlrpc:org.apache.xmlrpc:3.0.0', 'xmlrpc » xmlrpc:3.0')
+replace('org.h2:org.h2:1.1.117', 'com.h2database » h2database:1.1.117')
+replace('org.hamcrest.core:org.hamcrest.core:1.1.0', 'org.hamcrest » hamcrest-core:1.1')
+replace('org.jdom:org.jdom:1.0.0', 'jdom » jdom:1.0')
+replace('org.junit4:org.junit4:4.8.1', 'junit » junit:4.8.1')
+replace('org.junit:org.junit:3.8.2', 'junit » junit:3.8.2')
+replace('org.mortbay.jetty:org.mortbay.jetty.server:6.1.23', 'org.mortbay.jetty » jetty:6.1.23')
+replace('org.mortbay.jetty.util:6.1.23', 'org.mortbay.jetty » jetty-util:6.1.23')
+replace('org.mozilla.javascript:org.mozilla.javascript:[1.6.0,2.0.0)', 'rhino:js:1.7R2')
+replace('org.objectweb.asm:org.objectweb.asm:3.2.0', 'asm » asm:3.2')
+replace('org.sat4j.core:org.sat4j.core:2.2.0', 'org.sat4j » org.sat4j.core:2.2.3')
+replace('org.sat4j.pb:org.sat4j.pb:2.2.0', 'org.sat4j » org.sat4j.pb:2.2.3')
+# Does not exist on Central
+#replace('org.uddi4j:org.uddi4j:2.0.5', '')
+replace('org.w3c.css:org.w3c.css.sac:1.3.0', 'org.w3c.css » sac:1.3')
+# Does not exist on Central
+#replace('org.w3c.dom:org.w3c.dom.events:3.0.0', '')
+# Does not exist on Central
+#replace('org.w3c.dom.smil:1.0.1', '')
+# Does not exist on Central
+#replace('org.w3c.dom.svg:1.1.0', '')
+replace('org.w3c.sac:org.w3c.sac:1.3.0', 'org.w3c.css » sac:1.3'):
+
+delete('system.bundle:system.bundle:[0,)')
