@@ -330,7 +330,7 @@ class Pom(object):
         
         profile = Profile(xml)
         profile.id = profileId
-        profile.activeByDefault(False)
+        #profile.activeByDefault(False)
     
         etree.SubElement(xml, POM_NS_PREFIX+'dependencies')
         
