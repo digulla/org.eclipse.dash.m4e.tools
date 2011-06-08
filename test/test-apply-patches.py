@@ -93,7 +93,7 @@ def test_loadPatches():
     tool = PatchLoader('../patches')
     tool.run()
     
-    eq_('[PatchSet(../patches/eclipse-3.6.2.patches)]', repr(tool.patches))
+    eq_('[PatchSet(../patches/eclipse-3.6.2.patches), StripQualifiers()]', repr(tool.patches))
 
     x = tool.patches[0].patches
     eq_('[DependencyPatcher(63)]', repr(x))
@@ -124,7 +124,7 @@ def test_ApplyPatches():
     loader.addRemoveNonOptional()
     loader.run()
     
-    eq_('[RemoveNonOptional(), PatchSet(../patches/eclipse-3.6.2.patches)]', repr(loader.patches))
+    eq_('[RemoveNonOptional(), PatchSet(../patches/eclipse-3.6.2.patches), StripQualifiers()]', repr(loader.patches))
     
     pom = Pom('org.eclipse.birt.core-2.6.2.pom')
     
@@ -235,3 +235,13 @@ def test_noDependencies():
     pom = Pom(StringIO.StringIO(xml))
     
     eq_([], pom.dependencies())
+
+def test_stripQualifier():
+    pom = Pom('org.eclipse.persistence.moxy-2.1.2.pom')
+    
+    StripQualifiers().run(pom)
+    with open('org.eclipse.persistence.moxy-2.1.2.fixed') as fh:
+        expected = fh.read()
+    
+    compareStrings(expected, repr(pom))
+

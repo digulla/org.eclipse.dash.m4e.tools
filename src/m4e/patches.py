@@ -18,6 +18,7 @@ Created on Apr 7, 2011
 
 import os.path
 import logging
+import re
 from lxml import etree, objectify
 from pom import removeElement
 
@@ -208,7 +209,31 @@ class DependencyPatcher(object):
 
     def __repr__(self):
         return 'DependencyPatcher(%d)' % len(self.replacements)
-        
+
+class StripQualifiers(object):
+    '''Strip Eclipse qualifiers from versions'''
+    def __init__(self):
+        versionGroup = r'(\d+\.\d+\.\d+)'
+        qualifier = r'(\.[^,]+)'
+        self.versionPattern = re.compile('^%s%s?$' % (versionGroup, qualifier))
+        self.versionRangePattern = re.compile('^([\[\]()])%s%s?,%s%s?([\[\]()])$' % (versionGroup, qualifier, versionGroup, qualifier))
+    
+    def run(self, pom):
+        for d in pom.dependencies():
+            m = self.versionRangePattern.match(d.version)
+            if m is None:
+                m = self.versionPattern.match(d.version)
+                
+                if m is None:
+                    log.warn('Odd version %s in POM %s' % (d.version, pom.pomFile))
+                else:
+                    d.version = m.group(1)
+            else:
+                d.version = '%s%s,%s%s' % (m.group(1), m.group(2), m.group(4), m.group(6))
+
+    def __repr__(self):
+        return 'StripQualifiers()'
+
 class PatchLoader(object):
     '''Load patches from a file'''
     
@@ -240,6 +265,7 @@ class PatchLoader(object):
         
         patch = PatchSet(fileName)
         self.patches.append(patch)
+        self.patches.append(StripQualifiers())
         
         replacements = []
         deletes = []
