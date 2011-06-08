@@ -93,14 +93,14 @@ def test_loadPatches():
     tool = PatchLoader('../patches')
     tool.run()
     
-    eq_('[PatchSet(../patches/birt-2.6.2.patches)]', repr(tool.patches))
+    eq_('[PatchSet(../patches/eclipse-3.6.2.patches)]', repr(tool.patches))
 
     x = tool.patches[0].patches
-    eq_('[DependencyPatcher(2)]', repr(x))
+    eq_('[DependencyPatcher(63)]', repr(x))
     eq_('m4e.maven-central', tool.profile)
     eq_('m4e.orbit', tool.defaultProfile)
-    x = x[0].replacements
-    eq_('[ReplaceDependency(org.mozilla.javascript:org.mozilla.javascript:[1.6.0,2.0.0) -> rhino:js:1.7R2), ReplaceDependency(org.apache.log4j:org.apache.log4j:1.2.15 -> log4j:log4j:1.2.15)]', repr(x))
+    x = x[0].replacements[0]
+    eq_('ReplaceDependency(com.jcraft.jsch:com.jcraft.jsch:0.1.41 -> com.jcraft:jsch:0.1.41)', repr(x))
 
 def test_dependencyFromString():
     d = dependencyFromString('a:b:1.0')
@@ -124,7 +124,7 @@ def test_ApplyPatches():
     loader.addRemoveNonOptional()
     loader.run()
     
-    eq_('[RemoveNonOptional(), PatchSet(../patches/birt-2.6.2.patches)]', repr(loader.patches))
+    eq_('[RemoveNonOptional(), PatchSet(../patches/eclipse-3.6.2.patches)]', repr(loader.patches))
     
     pom = Pom('org.eclipse.birt.core-2.6.2.pom')
     
@@ -170,9 +170,6 @@ POM_WITH_RHINO_DEPENDENCY = '''\
     </profile>
     <profile>
       <id>m4e.maven-central</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
       <dependencies>
         <dependency>
           <groupId>rhino</groupId>

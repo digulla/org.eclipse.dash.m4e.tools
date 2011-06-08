@@ -19,6 +19,7 @@ Created on Apr 7, 2011
 import os.path
 import logging
 from lxml import etree, objectify
+from pom import removeElement
 
 log = logging.getLogger("m4e.patches")
 
@@ -201,6 +202,9 @@ class DependencyPatcher(object):
             log.debug('Found %s in %s' % (key, pom.pomFile))
             
             tool.replaceDependency(dependency, r.replacement)
+        
+        if tool.profile:
+            removeElement(tool.profile.xml().activation)
 
     def __repr__(self):
         return 'DependencyPatcher(%d)' % len(self.replacements)
