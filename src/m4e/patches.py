@@ -213,23 +213,33 @@ class DependencyPatcher(object):
 class StripQualifiers(object):
     '''Strip Eclipse qualifiers from versions'''
     def __init__(self):
-        versionGroup = r'(\d+\.\d+\.\d+)'
-        qualifier = r'(\.[^,]+)'
-        self.versionPattern = re.compile('^%s%s?$' % (versionGroup, qualifier))
-        self.versionRangePattern = re.compile('^([\[\]()])%s%s?,%s%s?([\[\]()])$' % (versionGroup, qualifier, versionGroup, qualifier))
+        self.versionRangePattern = re.compile('^([\[\]()])([^,]*),([^,]*)([\[\]()])$')
     
     def run(self, pom):
         for d in pom.dependencies():
-            m = self.versionRangePattern.match(d.version)
-            if m is None:
-                m = self.versionPattern.match(d.version)
-                
-                if m is None:
-                    log.warn('Odd version %s in POM %s' % (d.version, pom.pomFile))
-                else:
-                    d.version = m.group(1)
-            else:
-                d.version = '%s%s,%s%s' % (m.group(1), m.group(2), m.group(4), m.group(6))
+            d.version = self.stripQualifier(d.version)
+
+    def stripQualifier(self, version):
+        m = self.versionRangePattern.match(version)
+        if m is None:
+            return self.stripQualifier2(version)
+        
+        prefix = m.group(1)
+        v1 = m.group(2)
+        v2 = m.group(3)
+        postfix = m.group(4)
+        
+        v1 = self.stripQualifier2(v1)
+        v2 = self.stripQualifier2(v2)
+        
+        return '%s%s,%s%s' % (prefix, v1, v2, postfix)
+
+    def stripQualifier2(self, version):
+        if not version:
+            return version
+        
+        parts = version.split('.')
+        return '.'.join(parts[0:3])
 
     def __repr__(self):
         return 'StripQualifiers()'

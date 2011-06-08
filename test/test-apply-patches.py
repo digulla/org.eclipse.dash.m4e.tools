@@ -245,3 +245,26 @@ def test_stripQualifier():
     
     compareStrings(expected, repr(pom))
 
+def test_stripQualifier2():
+    compareStrings('1', StripQualifiers().stripQualifier('1'))
+
+def test_stripQualifier3():
+    compareStrings('1.0', StripQualifiers().stripQualifier('1.0'))
+
+def test_stripQualifier4():
+    compareStrings('1.3.2', StripQualifiers().stripQualifier('1.3.2'))
+
+def test_stripQualifier5():
+    compareStrings('', StripQualifiers().stripQualifier(''))
+
+def test_stripQualifier6():
+    compareStrings('[2.5.0,3.0.0)', StripQualifiers().stripQualifier('[2.5.0.v200906151043,3.0.0)'))
+
+def test_stripQualifier7():
+    compareStrings('[0,)', StripQualifiers().stripQualifier('[0,)'))
+
+def test_stripQualifier8():
+    compareStrings('[2.6.2,3.0)', StripQualifiers().stripQualifier('[2.6.2,3.0)'))
+
+def test_stripQualifier8():
+    compareStrings('[3.6.1,4)', StripQualifiers().stripQualifier('[3.6.1,4)'))
