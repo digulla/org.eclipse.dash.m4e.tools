@@ -210,7 +210,9 @@ class Analyzer(object):
         '''Check the different versions which are used to locate a dependency.'''
         for key, versionBackRefs in self.versionBackRefs.items():
             if len(versionBackRefs) > 1:
-                pom = self.pomByKey[key]
+                pom = self.pomByKey.get(key, None)
+                if not pom:
+                    continue
                 
                 self.newProblem(ProblemDifferentVersions(pom, versionBackRefs))
     
